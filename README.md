@@ -8,7 +8,7 @@
 
 React · TypeScript · React Three Fiber · Web Audio
 
-**Early MVP · MIT licensed · Local by design**
+**Early MVP · Local by design**
 
 [![Quality](https://github.com/Shmartin1/chromesthesia/actions/workflows/ci.yml/badge.svg)](https://github.com/Shmartin1/chromesthesia/actions/workflows/ci.yml)
 
@@ -20,7 +20,9 @@ In silence, nothing. A bass pluck becomes a glowing blue rubber orb. A sustained
 
 Chromesthesia starts from one person's synesthetic associations and makes them editable. It is a coherent abstract listening space, with stereo placement, pitch-driven height and brightness, and quiet sounds that recede into black.
 
-![Chromesthesia listening interface](docs/media/experience.png)
+![Chromesthesia sculptural sound world](docs/media/live-world.png)
+
+The scene uses elastic attack response, continuous curved surfaces, translucent ribbon folds, luminous filaments, and stable tracking across frequency regions. Motion follows the audio while every form still disappears immediately in silence.
 
 > **An interpretation, not instrument separation.** The MVP measures stereo energy, frequency and texture, then applies transparent heuristics. Overlapping sounds in a finished mix cannot be reliably identified or positioned independently. The inspector explains the interpretation, and your profile can override it.
 
@@ -74,7 +76,7 @@ flowchart LR
   U[Calibration / editor] --> P
 ```
 
-The engine keeps measurement, interpretation, rendering and profile storage separate. Geometry and materials are reused; animation updates run outside React state. The inspector updates at 10 Hz and shows the same events the renderer receives, including raw features and the reason for each form.
+The engine keeps measurement, interpretation, rendering and profile storage separate. Geometry and materials are reused; curves deform on the GPU and temporal animation runs outside React state. Stable spectral matching and velocity-continuous springs reduce flicker and snapping without holding inaudible sounds. The inspector updates at 10 Hz and shows the same events the renderer receives, including raw features and the reason for each form.
 
 | Package             | Responsibility                                                 |
 | ------------------- | -------------------------------------------------------------- |
@@ -121,6 +123,8 @@ GitHub Actions runs the quality gate and Chromium tests. See [validation and man
 ## Demo and media
 
 The playable demo is bundled in the app. [Interface screenshot](docs/media/experience.png) · [Live scene](docs/media/live-world.png).
+
+Isolated rendering studies use original synthetic audio and explicit profile overrides to make each material easy to review: [rubber orb](docs/media/bass-orb.png), [sustained tube](docs/media/bass-tube.png), [voice ribbons](docs/media/voice.png), [synth filaments](docs/media/synth.png), and [flame curtain](docs/media/flame.png). These are material demonstrations, not classifier benchmarks.
 
 **Public demo:** deployment URL pending. **Demo video:** reserved for a 20–30 second capture showing bass → wisps/neon → dense chord → silence, followed by one profile edit. Use the original study or appropriately licensed audio.
 

@@ -55,6 +55,8 @@ export interface VisualEvent {
   frequency: number;
   pan: number;
   db: number;
+  onset: number;
+  age: number;
 }
 
 export interface SceneFrame {
@@ -189,6 +191,8 @@ export function mapFeatures(frame: FeatureFrame, profile: SynestheticProfile): S
       frequency: band.frequency,
       pan,
       db: band.db,
+      onset: band.onset,
+      age: band.age,
     };
   });
   return { time: frame.time, audible: events.length > 0, events };

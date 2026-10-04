@@ -696,7 +696,12 @@ export function App() {
                   step={0.1}
                   value={Math.min(telemetry.position, status.duration || 24)}
                   disabled={status.state === 'idle' || busy}
-                  onChange={(event) => engine.seek(Number(event.target.value))}
+                  onChange={(event) => {
+                    const position = Number(event.target.value);
+                    engine.seek(position);
+                    // Commit the controlled value before native change/keyup can restore stale telemetry.
+                    setTelemetry((previous) => ({ ...previous, position }));
+                  }}
                 />
                 <span className="time">{formatTime(status.duration || 24)}</span>
               </>

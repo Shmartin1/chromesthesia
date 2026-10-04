@@ -28,16 +28,19 @@ test('silence, playback, pause, mute, seek, and immersive escape', async ({ page
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Begin the study' }).click();
   await expect(page.getByTestId('event-count')).not.toHaveText('00');
+  const seek = page.getByRole('slider', { name: 'Playback position', exact: true });
   if (process.env.CHROMESTHESIA_SCREENSHOTS) {
-    const seek = page.getByRole('slider', { name: 'Playback position', exact: true });
     const bounds = (await seek.boundingBox())!;
     await seek.click({ position: { x: bounds.width * 0.72, y: bounds.height / 2 } });
     await expect(seek).toHaveValue(/^1[67]/);
     await expect(page.getByTestId('event-count')).not.toHaveText('00');
     await page.screenshot({ path: 'docs/media/live-world.png' });
-    await seek.press('Home');
-    await expect(page.getByTestId('event-count')).not.toHaveText('00');
   }
+  await seek.fill('10');
+  await expect(seek).toHaveValue(/^1[01](\.\d+)?$/);
+  await seek.press('Home');
+  await expect(seek).toHaveValue(/^[0-2](\.\d+)?$/);
+  await expect(page.getByTestId('event-count')).not.toHaveText('00');
   await page.getByRole('button', { name: 'Enter immersive view' }).click();
   await expect
     .poll(async () => litPixels(await page.locator('canvas').screenshot()))
@@ -52,6 +55,8 @@ test('silence, playback, pause, mute, seek, and immersive escape', async ({ page
   // Exit must work even when the button that entered focus still owns keyboard focus.
   await page.keyboard.press('Escape');
   await expect(page.locator('.topbar')).toBeVisible();
+  // Start mute/unmute from an audible passage, independent of screenshot/render duration.
+  await page.getByRole('slider', { name: 'Playback position', exact: true }).fill('4');
   await page.getByRole('slider', { name: 'Playback volume', exact: true }).press('Home');
   await page.getByRole('button', { name: 'Play audio', exact: true }).click();
   await expect(page.getByTestId('event-count')).toHaveText('00');

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VisualEvent } from '@chromesthesia/core';
-import { SoundTransition } from './transition';
+import { SoundTransition, spring } from './transition';
 
 const sound: VisualEvent = {
   id: 0,
@@ -18,9 +18,33 @@ const sound: VisualEvent = {
   frequency: 100,
   pan: -1,
   db: -20,
+  onset: 0,
+  age: 0.1,
 };
 
 describe('active sound transitions', () => {
+  it('preserves velocity through target changes and settles without frame-step instability', () => {
+    const first = spring(0, 0, 1, 0.05);
+    const redirected = spring(first.position, first.velocity, -1, 0);
+    expect(redirected.position).toBeCloseTo(first.position);
+    expect(redirected.velocity).toBeCloseTo(first.velocity);
+    expect(spring(first.position, first.velocity, -1, 10)).toEqual({
+      position: -1,
+      velocity: expect.any(Number),
+    });
+  });
+
+  it('ties elastic recoil to onsets and freezes procedural phase in reduced motion', () => {
+    const transition = new SoundTransition();
+    transition.sample(sound, 0);
+    const active = transition.sample({ ...sound, onset: 1, age: 0 }, 1 / 60)!;
+    expect(active.impulse).toBeGreaterThan(0);
+    expect(active.travel).toBe(0);
+    const phase = active.phase;
+    const reduced = transition.sample({ ...sound, age: 0.1 }, 0.1, true)!;
+    expect(reduced.impulse).toBe(0);
+    expect(reduced.phase).toBe(phase);
+  });
   it('places new sounds immediately, clears on silence, and never carries history across silence', () => {
     const transition = new SoundTransition();
     expect(transition.sample(sound, 1 / 60)!.event.position).toEqual(sound.position);
@@ -49,10 +73,11 @@ describe('active sound transitions', () => {
     const slow = run(30),
       fast = run(144);
     expect(slow.event.position[0]).toBeCloseTo(fast.event.position[0], 10);
-    expect(slow.event.scale).toBeCloseTo(2, 3);
+    expect(slow.event.scale).toBeCloseTo(2, 2);
     expect(slow.event.scale).toBeLessThan(2);
     expect(slow.color.r).toBeCloseTo(fast.color.r, 10);
-    expect(slow.weights.tube).toBeCloseTo(fast.weights.tube, 10);
+    // Timbre confirmation is bounded by one frame; spatial integration is analytic.
+    expect(slow.weights.tube).toBeCloseTo(fast.weights.tube, 2);
     expect(start).toEqual(sound);
     expect(target.position).toEqual([3, 2, 1]);
   });
@@ -61,7 +86,9 @@ describe('active sound transitions', () => {
     const transition = new SoundTransition();
     transition.sample(sound, 0);
     const target: VisualEvent = { ...sound, form: 'tube', position: [1, 2, 3] };
-    const blended = transition.sample(target, 1 / 60)!;
+    const transient = transition.sample(target, 1 / 60)!;
+    expect(transient.weights.tube).toBe(0);
+    const blended = transition.sample(target, 0.1)!;
     expect(blended.weights.tube).toBeGreaterThan(0);
     expect(blended.weights.orb).toBeGreaterThan(0);
     expect(Object.values(blended.weights).reduce((a, b) => a + b)).toBeCloseTo(1);

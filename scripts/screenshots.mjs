@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 const result = spawnSync(
   process.execPath,
-  ['node_modules/@playwright/test/cli.js', 'test', '--grep', 'silence, playback'],
+  ['node_modules/@playwright/test/cli.js', 'test', '--grep', 'silence, playback|detailed surface'],
   {
     env: { ...process.env, CHROMESTHESIA_SCREENSHOTS: '1' },
     stdio: 'inherit',
