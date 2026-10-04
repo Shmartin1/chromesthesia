@@ -1,4 +1,4 @@
-import type { VisualEvent } from '@chromesthesia/core';
+import { MAX_TONAL_EVENTS, type VisualEvent } from '@chromesthesia/core';
 
 export interface TrackedSound {
   event: VisualEvent;
@@ -7,7 +7,7 @@ export interface TrackedSound {
 
 /** Match neighboring spectral detections without inventing sounds or holding missing events. */
 export class SoundTracker {
-  readonly slots: Array<TrackedSound | undefined> = Array.from({ length: 15 });
+  readonly slots: Array<TrackedSound | undefined> = Array.from({ length: MAX_TONAL_EVENTS });
   private generation = 0;
 
   update(events: readonly VisualEvent[]) {

@@ -11,6 +11,16 @@ function spectrum(low: number, high: number, db: number) {
 }
 
 describe('percussion onsets', () => {
+  it('positions a new hat from its attack energy instead of a sustained opposite-side bed', () => {
+    const detector = new TransientDetector(),
+      quiet = new Float32Array(bins).fill(-120);
+    const bed = spectrum(6000, 15000, -36),
+      attack = spectrum(6000, 15000, -30);
+    detector.analyze(quiet, bed, rate, 0, -58, []);
+    const hit = detector.analyze(attack, bed, rate, 0.1, -58, [])[0]!;
+    expect(hit.kind).toBe('hat');
+    expect(hit.pan).toBeLessThan(-0.99);
+  });
   it('does not retrigger when two visual samples share one audio quantum', () => {
     const detector = new TransientDetector(),
       data = spectrum(6000, 15000, -30);

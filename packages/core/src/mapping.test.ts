@@ -9,6 +9,8 @@ import {
   type PercussionFeature,
   noteColor,
   pitchFromFrequency,
+  shadeColor,
+  MAX_TONAL_EVENTS,
 } from './index';
 const band: BandFeature = {
   id: 0,
@@ -26,6 +28,94 @@ const frame = (patch: Partial<BandFeature> = {}): FeatureFrame => ({
   bands: [{ ...band, ...patch }],
 });
 describe('sound → world invariants', () => {
+  it('maps every melodic pitch class around the full rainbow regardless of legacy family anchors', () => {
+    const savedBluePalette = {
+      ...defaultProfile,
+      colors: {
+        ...defaultProfile.colors,
+        voice: ['#2222ff', '#2222ff', '#2222ff'] as [string, string, string],
+        synth: ['#8822ff', '#8822ff', '#8822ff'] as [string, string, string],
+      },
+    };
+    const hue = (color: string) => {
+      const [r, g, b] = [1, 3, 5].map((offset) =>
+        parseInt(color.slice(offset, offset + 2), 16),
+      ) as [number, number, number];
+      const max = Math.max(r, g, b),
+        delta = max - Math.min(r, g, b);
+      return (
+        ((max === r ? (g - b) / delta : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4) *
+          60 +
+          360) %
+        360
+      );
+    };
+    for (let note = 0; note < 12; note++)
+      for (const family of ['voice', 'synth', 'supersaw'] as const) {
+        const color = noteColor(family, note, savedBluePalette);
+        expect(hue(color)).toBeCloseTo(note * 30, 0);
+        expect(color).toBe(noteColor('voice', note + 12, defaultProfile));
+      }
+  });
+  it('uses spectral-frequency colors for unresolved plumes without fabricating pitch metadata', () => {
+    const profile = {
+      ...defaultProfile,
+      assignments: { ...defaultProfile.assignments, mid: 'voice' as const },
+    };
+    const colors = Array.from({ length: 12 }, (_, note) => {
+      const frequency = 523.251 * 2 ** (note / 12);
+      const event = mapFeatures(frame({ frequency, pitch: undefined, flatness: 0.3 }), profile)
+        .events[0]!;
+      expect(event.pitch).toBeUndefined();
+      expect(event.reason).toContain('no stable pitch');
+      expect(event.color).toBe(noteColor('voice', note, profile));
+      return event.color;
+    });
+    expect(new Set(colors).size).toBe(12);
+  });
+  it('keeps distinct nearby notes and reserves space for quieter stereo detail', () => {
+    const chord = [523.251, 659.255, 783.991].map((frequency, id) => ({
+      ...band,
+      id,
+      frequency,
+      pan: 0,
+      pitch: pitchFromFrequency(frequency, 0.9),
+    }));
+    expect(mapFeatures({ ...frame(), bands: chord }, defaultProfile).events).toHaveLength(3);
+    const center = Array.from({ length: 32 }, (_, id) => ({
+      ...band,
+      id,
+      frequency: 240 * 2 ** (id / 8),
+      pan: 0,
+      pitch: pitchFromFrequency(240 * 2 ** (id / 8), 0.9),
+    }));
+    const sides = [-0.9, 0.9].map((pan, index) => ({
+      ...band,
+      id: 100 + index,
+      frequency: 1300,
+      pan,
+      db: -48,
+    }));
+    const events = mapFeatures({ ...frame(), bands: [...center, ...sides] }, defaultProfile).events;
+    expect(events).toHaveLength(MAX_TONAL_EVENTS);
+    expect(events.some((event) => event.pan < -0.8)).toBe(true);
+    expect(events.some((event) => event.pan > 0.8)).toBe(true);
+  });
+  it('retains note color differences after frequency shading and lightens every family with frequency', () => {
+    for (const family of ['bass', 'voice', 'synth'] as const) {
+      const colors = Array.from({ length: 12 }, (_, note) =>
+        shadeColor(noteColor(family, note, defaultProfile), 0.4),
+      );
+      expect(new Set(colors).size).toBe(12);
+      for (const color of colors) {
+        const low = shadeColor(color, 0.25),
+          high = shadeColor(color, 0.7);
+        const brightness = (hex: string) =>
+          [1, 3, 5].reduce((sum, offset) => sum + parseInt(hex.slice(offset, offset + 2), 16), 0);
+        expect(brightness(high)).toBeGreaterThan(brightness(low));
+      }
+    }
+  });
   it('silence immediately clears previously visible forms', () => {
     expect(mapFeatures(frame(), defaultProfile).events).toHaveLength(1);
     expect(mapFeatures(silentFeatures(), defaultProfile)).toEqual({
@@ -134,6 +224,7 @@ describe('sound → world invariants', () => {
     expect(hat.color).toBe('#ffffff');
     expect(hat.scale).toBeLessThan(kick.scale / 2);
     expect(hat.glow).toBe(0);
+    expect(hat.position[1]).toBeGreaterThan(3.2);
     expect(mapFeatures({ ...silentFeatures(), percussion: [hit] }, defaultProfile).events).toEqual(
       [],
     );

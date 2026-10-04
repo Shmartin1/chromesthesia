@@ -6,7 +6,7 @@ const result = spawnSync(
     'node_modules/@playwright/test/cli.js',
     'test',
     '--grep',
-    'silence, playback|detailed surface|solid drum facets',
+    'silence, playback|detailed surface|solid drum facets|rendered notes',
   ],
   {
     env: { ...process.env, CHROMESTHESIA_SCREENSHOTS: '1' },

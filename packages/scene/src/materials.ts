@@ -8,6 +8,7 @@ import {
   Vector3,
 } from 'three';
 import type { FormKind } from '@chromesthesia/core';
+import { dyeFlow } from './flow';
 
 const shared = `
 uniform float uPhase, uEnergy, uImpulse, uMotion, uGlow, uWeight, uLightness, uSeed;
@@ -31,35 +32,30 @@ float musicalPulse(float position) {
 
 const vertex = `
 ${shared}
+${dyeFlow}
 float tubeRadius(float u) {
   float cap=min(clamp(u,0.0,1.0),1.0-clamp(u,0.0,1.0))*3.5;
   float radius=0.32+0.055*uEnergy;
   return radius*sqrt(max(0.00001,1.0-pow(max(0.0,1.0-cap/radius),2.0)));
 }
 vec3 curve(float u, float lane) {
-  float s = sin(PI*u), t = uPhase, seed = uSeed*0.31;
+  float t = uPhase;
   #ifdef FORM_TUBE
     return vec3(sin(u*4.5+t*0.6)*0.36*uMotion, (u-0.5)*3.5,
       cos(u*3.8+t*0.5)*0.28*uMotion);
   #endif
   #ifdef FORM_NEON
-    float angle = u*5.2-2.6;
-    return vec3(sin(angle)*1.65 + (lane-2.0)*0.105,
-      (u-0.5)*2.35 + (lane-2.0)*0.085 + sin(u*6.2-t)*0.16*uMotion,
-      cos(angle)*0.65 + (lane-2.0)*0.07 + sin(u*9.0-t*1.5)*uImpulse*0.08);
+    vec3 p=dyeCurve(u,lane*1.6,2.4);
+    p.y*=0.85;
+    return p;
   #endif
   #ifdef FORM_WISP
-    float angle = u*6.4-t*0.48+seed+(lane-4.0)*0.12;
-    float width = 0.52 + s*0.28;
-    return vec3(sin(angle)*width + (lane-4.0)*0.10*s,
-      (u-0.5)*4.25 + sin(u*5.0-t+lane*0.3)*0.1*uMotion,
-      cos(angle)*width*0.7 + (lane-4.0)*0.08);
+    return dyeCurve(u,lane,2.45);
   #endif
   #ifdef FORM_FLAME
-    float spread = (lane-7.0)/7.0;
-    return vec3(spread*2.45 + sin(u*5.5-t*0.9+lane*0.6)*0.26*s*uMotion,
-      (u-0.5)*(3.5+0.8*cos(lane*0.9)) + sin(lane*1.3)*0.16,
-      sin(u*4.4-t*0.6+lane*0.5)*0.4 + spread*spread*0.25);
+    vec3 p=dyeCurve(1.0-u,lane,4.8);
+    p.y=-p.y;
+    return p;
   #endif
   return vec3(0.0);
 }
@@ -81,7 +77,9 @@ void main() {
     vUv=vec2(u,v); vLane=lane;
     vec3 center=curve(u,lane);
     vec3 tangent=normalize(curve(u+0.001,lane)-curve(u-0.001,lane));
-    vec3 side=normalize(cross(tangent,vec3(0.0,0.0,1.0)));
+    // Keep a well-defined frame even where an eddy turns toward the camera.
+    vec3 reference=abs(tangent.z)>0.98?vec3(0.0,1.0,0.0):vec3(0.0,0.0,1.0);
+    vec3 side=normalize(cross(tangent,reference));
     vec3 binormal=normalize(cross(side,tangent));
     float taper=pow(max(0.0001,sin(PI*u)),0.38);
     #if defined(FORM_TUBE) || defined(FORM_NEON)
@@ -90,7 +88,7 @@ void main() {
         float radius=tubeRadius(u);
         radius *= 1.0+sin(u*7.0-uPhase*7.0)*uImpulse*0.08;
       #else
-        float radius=(lane==2.0?0.036:0.017)*taper;
+        float radius=(0.014+flowHash(lane+14.0)*0.016)*taper;
         radius *= 1.0+musicalPulse(u)*uMotion*0.3;
       #endif
       p=center+n*radius;
@@ -102,17 +100,28 @@ void main() {
         n=vec3(0.0,0.0,1.0);
       #endif
     #else
-      float twist=u*5.0-uPhase*0.35+lane*0.35;
-      #ifdef FORM_WISP
-        float width=(0.22+sin(u*PI)*0.18)*taper;
-      #else
-        float width=(0.25+sin(lane*0.7)*0.07)*taper*(1.15-u*0.75);
-        twist=u*3.2+sin(lane*0.6)-uPhase*0.2;
+      float r=flowHash(floor(lane/3.0)+21.0);
+      float downstream=u;
+      #ifdef FORM_FLAME
+        downstream=1.0-u;
       #endif
-      vec3 ribbonSide=side*cos(twist)+binormal*sin(twist);
+      float eddy=smoothstep(0.2,0.95,downstream);
+      float twist=downstream*(4.0+r*4.0)-uPhase*0.22+r*6.28+mod(lane,3.0)*0.21;
+      float billow=0.75+0.25*sin(downstream*(8.0+r*5.0)-uPhase*0.65+r*9.0);
+      #ifdef FORM_WISP
+        float width=(0.035+eddy*(0.38+r*0.25))*taper*billow;
+      #else
+        float width=(0.08+eddy*(0.4+r*0.2))*taper*billow;
+      #endif
+      width*=0.65+flowHash(lane+47.0)*0.6;
+      // A continuous sheet orientation avoids a Frenet-frame flip at an inflection.
+      vec3 ribbonSide=normalize(vec3(cos(twist),sin(twist*0.7+r)*0.22,sin(twist)));
       n=normalize(cross(tangent,ribbonSide));
       p=center + ribbonSide*(v-0.5)*width*2.0;
-      p+=n*sin(v*PI)*sin(u*15.0-uPhase*1.2+lane)*0.045*taper*uMotion;
+      // Rounded cross sections roll the broad plume into a thin trailing edge.
+      vec3 foldNormal=vec3(-sin(twist),0.0,cos(twist));
+      p+=foldNormal*sin(v*PI)*width*(0.45+eddy*0.45);
+      p+=foldNormal*sin(v*PI)*flowNoise(vec2(downstream*8.0-uPhase*0.3,lane))*0.065*taper;
     #endif
   #endif
   vec4 view=modelViewMatrix*vec4(p,1.0);
@@ -124,6 +133,7 @@ void main() {
 
 const fragment = `
 ${shared}
+${dyeFlow}
 void main() {
   vec3 n=normalize(vNormal), eye=normalize(-vView);
   if(!gl_FrontFacing) n=-n;
@@ -157,28 +167,30 @@ void main() {
     #ifdef FORM_NEON
       float pulse=musicalPulse(vUv.x)*uMotion;
       float core=pow(facing,7.0);
-      color=mix(uColor,vec3(0.92,0.96,1.0),core*0.34)*(1.05+pulse*1.4);
+      color=uColor*(0.85+core*0.3+pulse*0.35);
       alpha*=energy*(0.65+core*0.35);
     #endif
     #ifdef FORM_WISP
-      float edge=pow(max(0.0,sin(vUv.y*PI)),0.9);
-      float ends=pow(max(0.0,sin(vUv.x*PI)),0.65);
-      float fiber=pow(0.5+0.5*sin(vUv.y*95.0+sin(vUv.x*13.0-uPhase)*2.0),14.0);
-      float fold=0.5+0.5*sin(vUv.x*15.0-uPhase*1.3+vLane*0.7);
-      color=mix(uColor,vec3(0.95,0.96,1.0),0.14+fresnel*0.35);
-      color*=0.65+fresnel*0.7+fiber*0.22;
-      alpha*=edge*ends*(0.12+fold*0.12+fresnel*0.22)*energy;
+      float edge=pow(max(0.0,sin(vUv.y*PI)),1.35);
+      float ends=pow(max(0.0,sin(vUv.x*PI)),0.5);
+      float cloud=flowNoise(vec2(vUv.x*8.0-uPhase*0.4,vUv.y*4.0+vLane*0.3));
+      float warp=flowNoise(vec2(vUv.x*4.0-uPhase*0.22,vUv.y*3.0+vLane*0.2));
+      float fiber=pow(0.5+0.5*sin(vUv.y*105.0+warp*12.0+vUv.x*8.0),18.0);
+      float detail=flowNoise(vec2(vUv.x*19.0-uPhase*0.65,vUv.y*8.0+warp*2.0+vLane));
+      float density=smoothstep(-0.65,0.8,cloud+detail*0.3);
+      color=uColor*(0.85+fresnel*0.2+fiber*0.08);
+      alpha*=edge*ends*(0.08+density*0.48+fiber*0.05+fresnel*0.08)*energy;
     #endif
     #ifdef FORM_FLAME
       float edge=pow(max(0.0,sin(vUv.y*PI)),0.7);
       float ends=pow(max(0.0,sin(vUv.x*PI)),0.55);
-      float flame=0.5+0.5*sin(vUv.x*19.0-uPhase*2.4+vLane*0.65);
-      float thread=pow(0.5+0.5*sin(vUv.y*58.0+vUv.x*14.0-uPhase),12.0);
+      float cloud=flowNoise(vec2(vUv.x*6.0+uPhase*0.4,vUv.y*3.0+vLane*0.3));
+      float flame=0.5+cloud*0.5;
+      float thread=pow(0.5+0.5*sin(vUv.y*83.0+cloud*9.0+vUv.x*11.0),15.0);
       vec3 spectrum=0.48+0.42*cos(vec3(0.2,2.3,4.4)+vLane*0.43+vUv.x*1.8);
-      color=mix(uColor,spectrum,0.38);
-      color=mix(color,vec3(1.0,0.91,0.72),pow(1.0-vUv.x,4.0)*0.4);
-      color*=1.2+flame*0.6+thread*0.45+fresnel*0.6;
-      alpha*=edge*ends*energy*(0.45+flame*0.24);
+      color=uColor*mix(vec3(1.0),spectrum,0.22);
+      color*=0.85+flame*0.25+thread*0.12+fresnel*0.15;
+      alpha*=edge*ends*energy*(0.26+flame*0.2);
     #endif
   #endif
   if(alpha<0.002) discard;
@@ -189,7 +201,8 @@ void main() {
 `;
 
 export function createMaterial(form: FormKind, aura = false) {
-  const additive = aura || form === 'neon' || form === 'wisp' || form === 'flame';
+  const additive = aura;
+  const twoSided = aura || form === 'neon' || form === 'wisp' || form === 'flame';
   return new ShaderMaterial({
     defines: { [`FORM_${form.toUpperCase()}`]: 1, ...(aura ? { AURA: 1 } : {}) },
     uniforms: {
@@ -209,10 +222,10 @@ export function createMaterial(form: FormKind, aura = false) {
     fragmentShader: fragment,
     transparent: true,
     depthWrite: false,
-    side: additive ? DoubleSide : FrontSide,
-    // Additive ribbons do not need separate front/back transparency sorting.
-    forceSinglePass: additive,
+    side: twoSided ? DoubleSide : FrontSide,
+    // Same-pigment sheets compose in one pass without bleaching overlapping layers.
+    forceSinglePass: twoSided,
     blending: additive ? AdditiveBlending : NormalBlending,
-    toneMapped: !additive,
+    toneMapped: form === 'orb' || form === 'tube',
   });
 }

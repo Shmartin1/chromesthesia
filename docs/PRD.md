@@ -13,7 +13,7 @@ The founding perception is the default, not a claim about everybody's synesthesi
 | Bass pluck               | Rubbery orb with outer glow        | Blue                                       |
 | Sustained bass           | Thick rubbery tube                 | Blue                                       |
 | Voice-like texture       | Wisps, like food coloring in water | Pastel blue, pink, yellow                  |
-| Synth-like tone          | Neon tube                          | Personal neon palette                      |
+| Synth-like tone          | Neon tube                          | Twelve-note rainbow                        |
 | Supersaw-like chord      | Broad flame sheet                  | Multicolored                               |
 | Lower / higher frequency | Lower / higher placement           | Darker / lighter shading                   |
 | Kick-like attack         | Round beveled disc near bottom     | Black with charcoal reflection             |
@@ -44,7 +44,7 @@ React + React Three Fiber + Web Audio, static hosting, npm workspaces, MIT licen
 - Stereo FFT, waveform RMS/peak, frequency centroid, band energy/pan/flatness, attack and duration features.
 - Pure feature-to-scene mapping with audibility gate and no artificial release trails.
 - Five tonal form treatments plus solid drum polygons in a black 3D scene; bounded geometry and shader complexity.
-- Profile editor: color palettes, motion, glow, spatial spread, sensitivity, gate, region overrides.
+- Profile editor: bass color, rainbow note legend, motion, glow, spatial spread, sensitivity, gate, region overrides.
 - Five-step calibration with original synthetic studies and temporary shape previews.
 - Optional inspector with raw measurements, mappings, reasons, heuristic scores, and timing estimates.
 - Keyboard controls, reduced motion, local persistence, schema validation, unit and browser tests, CI and docs.

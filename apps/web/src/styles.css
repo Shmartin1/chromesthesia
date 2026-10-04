@@ -657,7 +657,13 @@ button:hover {
   font-variant-numeric: tabular-nums;
 }
 .event-list {
-  min-height: 148px;
+  /* Five 64px closed cards and four 6px gaps, including the empty state. */
+  height: 344px;
+  min-height: 344px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #42384f transparent;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -681,11 +687,13 @@ button:hover {
   color: #777080;
 }
 .event-card {
+  flex: 0 0 auto;
   border: 1px solid #25222c;
   border-radius: 6px;
   background: #121015;
 }
 .event-card summary {
+  height: 62px;
   list-style: none;
   display: flex;
   align-items: center;
@@ -697,8 +705,18 @@ button:hover {
   display: none;
 }
 .event-card summary > svg {
+  flex-shrink: 0;
   margin-left: auto;
   color: #80748f;
+}
+.event-card summary > span:not(.event-swatch) {
+  min-width: 0;
+}
+.event-card strong,
+.event-card small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .event-card strong {
   font-size: 10px;
@@ -1738,4 +1756,29 @@ input[type='range']::-moz-range-thumb {
 .note-chip small {
   font-size: 9px;
   color: var(--muted);
+}
+.stereo-image {
+  margin: 2px 0 26px;
+}
+.stereo-image-track {
+  position: relative;
+  height: 28px;
+  border-bottom: 1px solid var(--border, #29272e);
+  background: linear-gradient(90deg, transparent 49.7%, #38323e 50%, transparent 50.3%);
+}
+.stereo-image-track i {
+  position: absolute;
+  top: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+.stereo-image-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #8f889c;
 }

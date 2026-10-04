@@ -16,6 +16,8 @@ import {
   emptyScene,
   mapFeatures,
   silentFeatures,
+  shadeColor,
+  RAINBOW_NOTE_COLORS,
   type FeatureFrame,
   type SceneFrame,
   type StudyKind,
@@ -395,10 +397,9 @@ export function App() {
               <button className="perception-card" onClick={() => setProfileOpen(true)}>
                 <div className="palette">
                   <i style={{ background: profile.colors.bass }} />
-                  <i style={{ background: profile.colors.voice[1] }} />
-                  <i style={{ background: profile.colors.voice[2] }} />
-                  <i style={{ background: profile.colors.synth[0] }} />
-                  <i style={{ background: profile.colors.synth[1] }} />
+                  {[0, 2, 4, 8].map((note) => (
+                    <i key={note} style={{ background: RAINBOW_NOTE_COLORS[note] }} />
+                  ))}
                 </div>
                 <strong>{profile.name}</strong>
                 <span>Your colors. Your associations.</span>
@@ -602,6 +603,32 @@ export function App() {
                     <dd data-testid="event-count">{activeCount.toString().padStart(2, '0')}</dd>
                   </div>
                 </dl>
+                <div
+                  className="stereo-image"
+                  role="img"
+                  aria-label="Stereo image of current sounds"
+                >
+                  <div className="stereo-image-track">
+                    {telemetry.scene.events.map((event) => (
+                      <i
+                        key={`${event.percussion ?? 'tone'}-${event.id}`}
+                        title={`${event.pitch?.name ?? Math.round(event.frequency) + ' Hz'} · ${Math.round(Math.abs(event.pan) * 100)}% ${event.pan < 0 ? 'left' : 'right'}`}
+                        style={{
+                          left: `${50 + event.pan * 47}%`,
+                          opacity: 0.35 + event.intensity * 0.65,
+                          background: event.percussion
+                            ? event.color
+                            : shadeColor(event.color, event.lightness),
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div className="stereo-image-labels">
+                    <span>LEFT</span>
+                    <span>CENTER</span>
+                    <span>RIGHT</span>
+                  </div>
+                </div>
                 <div className="section-heading">
                   <span className="eyebrow">WHAT BECAME VISIBLE</span>
                 </div>
@@ -616,7 +643,14 @@ export function App() {
                         data-percussion={event.percussion}
                       >
                         <summary>
-                          <span className="event-swatch" style={{ background: event.color }} />
+                          <span
+                            className="event-swatch"
+                            style={{
+                              background: event.percussion
+                                ? event.color
+                                : shadeColor(event.color, event.lightness),
+                            }}
+                          />
                           <span>
                             <strong>
                               {event.percussion
@@ -631,12 +665,21 @@ export function App() {
                           <Icon name="chevron" size={12} />
                         </summary>
                         <p>{event.reason}</p>
+                        <p>
+                          {Math.abs(event.pan) < 0.05
+                            ? 'Centered'
+                            : `${Math.round(Math.abs(event.pan) * 100)}% ${event.pan < 0 ? 'left' : 'right'}`}{' '}
+                          · stereo energy near this sound’s frequency.
+                          {!event.percussion &&
+                            ` Frequency shade ${Math.round(event.lightness * 100)}%.`}
+                        </p>
                         {event.pitch && (
                           <p>
                             Estimated spectral note, A4 = 440 Hz ·{' '}
                             {event.pitch.cents > 0 ? '+' : ''}
-                            {event.pitch.cents} cents. Note chooses color within this family; octave
-                            controls lightness. Harmonics can appear as additional notes.
+                            {event.pitch.cents} cents. Note chooses hue; frequency controls shade.
+                            Melodic notes span the rainbow; bass retains its blue range. Harmonics
+                            can appear as additional notes.
                           </p>
                         )}
                         {event.percussion && (

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Color, ExtrudeGeometry, Mesh, OctahedronGeometry, ShaderMaterial, Shape } from 'three';
 import type { PercussionKind, SceneFrame } from '@chromesthesia/core';
+import { stereoX } from './spatial';
 
 const kinds = ['kick', 'snare', 'hat'] as const;
 
@@ -115,14 +116,16 @@ export function PercussionForms({
       mesh.visible = !!event;
       if (!event) continue;
       mesh.position.set(...event.position);
-      mesh.position.x *= Math.min(1, viewport.width / 14);
       const response = reducedMotion ? 1 : 0.82 + 0.24 * Math.exp(-event.age * 35);
       const scale = event.scale * response * Math.min(1, viewport.width / 7.5);
       mesh.scale.setScalar(scale);
+      mesh.position.x = stereoX(event.position[0], event.position[2], viewport.width, scale * 1.2);
       const halfHeight = (viewport.height * (10 - event.position[2])) / 20;
+      const y =
+        kind === 'hat' ? halfHeight * Math.min(0.92, event.position[1] / 4.5) : event.position[1];
       mesh.position.y = Math.max(
         -halfHeight + scale * 1.2 + 0.18,
-        Math.min(halfHeight - scale * 1.2 - 0.18, event.position[1]),
+        Math.min(halfHeight - scale * 1.2 - 0.18, y),
       );
       mesh.rotation.set(-0.12, kind === 'hat' ? 0.35 : -0.22, kind === 'snare' ? 0.18 : -0.1);
       if (!reducedMotion)

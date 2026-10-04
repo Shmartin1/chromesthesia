@@ -22,7 +22,7 @@ Chromesthesia starts from one person's synesthetic associations and makes them e
 
 ![Chromesthesia sculptural sound world](docs/media/live-world.png)
 
-The scene uses elastic attack response, continuous curved surfaces, translucent ribbon folds, luminous filaments, and stable tracking across frequency regions. Motion preserves momentum and wave phase across audio updates, with overlapping accents following new attacks. Every form still disappears immediately in silence.
+The scene uses elastic attack response, translucent dye plumes, luminous filaments, and stable tracking across frequency regions. Melodic forms branch into irregular currents, unfolding billows and fine curling tendrils inspired by food coloring in water. Each new sound receives a different, stable shape; continuous motion preserves its stereo anchor, note color and momentum. These are lightweight procedural surfaces, not a physical fluid simulation. Every form still disappears immediately in silence.
 
 > **An interpretation, not instrument separation.** The MVP measures stereo energy, frequency and texture, then applies transparent heuristics. Overlapping sounds in a finished mix cannot be reliably identified or positioned independently. The inspector explains the interpretation, and your profile can override it.
 
@@ -58,7 +58,9 @@ Open **Your perception** to choose colors, motion, glow, stereo width, pitch hei
 - **Mid:** 220–2,600 Hz; texture-based voice/synth/flame interpretations.
 - **High:** above 2,600 Hz; brighter, higher forms.
 
-Twelve note colors are derived from each family palette: bass stays blue, while voices and synths use their own colors. Repeated pitch classes return to the same color; higher octaves are lighter. The inspector labels resolved spectral notes (A4 = 440 Hz). Uncertain/noisy energy keeps a base color.
+Melodic plumes, neon and flames share a full twelve-note rainbow: C red, C♯ orange, D yellow, E green, F♯ cyan, G♯ blue, A violet, and the intervening hues for the other notes. The same pitch class repeats its hue across octaves; frequency controls its darker or lighter shade. Unresolved plumes use the nearest note-color at their spectral frequency, explicitly labeled as a color approximation rather than a detected note. Bass retains its personal blue range, and drums retain their own palettes.
+
+Stereo analysis retains multiple resolved notes per region and measures L/R energy around each peak. Up to 24 tonal forms share the view, with capacity for quieter side detail. The inspector’s stereo strip shows their distribution even when the overall mix is balanced. Its mapping list reserves five cards’ worth of space through silence and busy passages; expanded explanations scroll inside that fixed area. Hats occupy the upper register.
 
 The fifth calibration study adds a 120 BPM rhythm with sixteenth-note hats. Polygons respond to measured transients, without a generated visual beat grid. Black kicks use subtle charcoal reflections so they remain legible against the void.
 
@@ -129,7 +131,7 @@ GitHub Actions runs the quality gate and Chromium tests. See [validation and man
 
 The playable demo is bundled in the app. [Interface screenshot](docs/media/experience.png) · [Live scene](docs/media/live-world.png).
 
-Isolated rendering studies use original synthetic audio and explicit profile overrides to make each material easy to review: [rubber orb](docs/media/bass-orb.png), [sustained tube](docs/media/bass-tube.png), [voice ribbons](docs/media/voice.png), [synth filaments](docs/media/synth.png), and [flame curtain](docs/media/flame.png). A [controlled percussion rendering study](docs/media/percussion.png) shows the three percussion materials using fixed mapping events. These images are material demonstrations, not classifier benchmarks.
+Isolated rendering studies use original synthetic audio and explicit profile overrides to make each material easy to review: [rubber orb](docs/media/bass-orb.png), [sustained tube](docs/media/bass-tube.png), [voice dye plumes](docs/media/voice.png), [synth filaments](docs/media/synth.png), and [flame billows](docs/media/flame.png). A [controlled percussion rendering study](docs/media/percussion.png) shows the three percussion materials using fixed mapping events. A [twelve-note plume study](docs/media/rainbow-notes.png) shows the full chromatic rainbow. A [stereo note-color study](docs/media/stereo-notes.png) shows separate note hues and a high-positioned hat. These images are material demonstrations, not classifier benchmarks.
 
 **Public demo:** deployment URL pending. **Demo video:** reserved for a 20–30 second capture showing bass → wisps/neon → dense chord → silence, followed by one profile edit. Use the original study or appropriately licensed audio.
 

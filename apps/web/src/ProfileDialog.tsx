@@ -60,7 +60,7 @@ const calibrationSteps = [
   },
   {
     title: 'Let the voice diffuse.',
-    text: 'This synthetic vowel-like tone is a stand-in for a voice. Choose the pastel shades you associate with it.',
+    text: 'This synthetic vowel-like tone is a stand-in for a voice. Watch its note colors diffuse; higher frequencies use lighter shades.',
     family: 'voice' as StudyKind,
   },
   {
@@ -135,23 +135,6 @@ export function ProfileDialog({
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Could not read profile.');
     }
-  }
-  function colors(group: 'voice' | 'synth') {
-    return profile.colors[group].map((color, index) => (
-      <label className="color-choice" key={index}>
-        <input
-          aria-label={`${group} color ${index + 1}`}
-          type="color"
-          value={color}
-          onChange={(event) => {
-            const palette = [...profile.colors[group]] as [string, string, string];
-            palette[index] = event.target.value;
-            update({ colors: { ...profile.colors, [group]: palette } });
-          }}
-        />
-        <span>{index + 1}</span>
-      </label>
-    ));
   }
   return (
     <motion.dialog
@@ -255,26 +238,15 @@ export function ProfileDialog({
               />
             </label>
           </div>
-          <div className="palette-row">
-            <span>
-              Voice <small>Pastel diffusion</small>
-            </span>
-            <div className="button-row">{colors('voice')}</div>
-          </div>
-          <div className="palette-row">
-            <span>
-              Synth <small>Neon & flame</small>
-            </span>
-            <div className="button-row">{colors('synth')}</div>
-          </div>
           <h3>Notes become color</h3>
           <p className="small muted">
-            The same note returns to the same family color. Higher octaves become lighter. Noise and
-            uncertain pitches keep the family base color.
+            Melodic notes cover a full rainbow: C is red, D yellow, E green, F♯ cyan, G♯ blue, and A
+            violet. Higher frequencies use lighter shades. When pitch is uncertain, the spectral
+            frequency chooses the nearest note-color without claiming a detected note.
           </p>
-          {(['bass', 'voice', 'synth'] as const).map((family) => (
+          {(['bass', 'voice'] as const).map((family) => (
             <div className="note-palette" key={family}>
-              <span>{family}</span>
+              <span>{family === 'voice' ? 'melody' : 'bass'}</span>
               <div>
                 {NOTE_NAMES.map((name, index) => (
                   <span className="note-chip" key={name} title={`${family} · ${name}`}>

@@ -37,9 +37,9 @@ export function createGeometries() {
   return {
     orb: new SphereGeometry(0.83, 64, 40),
     tube: strands(1, 112, 24),
-    neon: strands(5, 128, 8),
-    wisp: strands(9, 112, 8),
-    flame: strands(15, 112, 6),
+    neon: strands(5, 160, 8),
+    wisp: strands(12, 144, 10),
+    flame: strands(15, 144, 8),
     halo: new PlaneGeometry(3.8, 3.8),
   };
 }

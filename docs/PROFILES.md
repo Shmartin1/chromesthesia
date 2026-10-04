@@ -19,15 +19,15 @@ The default profile translates the owner's description. It is not a universal sy
 
 Low is below 220 Hz, mid 220–2,600 Hz, high above 2,600 Hz. Overrides apply to spectral regions and can affect multiple instruments. They also suppress automatic drum interpretations in the overridden region. They are not stem-specific rules.
 
-Note colors are derived from these existing anchors without changing the JSON schema: twelve blue shades for bass and twelve interpolated colors for each voice/synth palette. Changing an anchor updates the visible C–B palette in the editor. Note colors repeat across octaves; octave brightness is independent. Percussion retains its fixed black, warm and neutral palettes.
+Melodic notes now use the requested full C–B rainbow, shared by voices, synths and supersaws. Frequency sets shade while preserving hue and saturation; unresolved melodic frequencies choose a color without claiming a detected note. Bass keeps twelve nearby hues derived from its editable anchor. The editor displays both scales and retains the bass picker. Legacy voice/synth anchor arrays remain validated and preserved in schema-v1 imports/exports for compatibility, but no longer constrain the melodic rainbow and are not offered as active color controls. Percussion retains its fixed black, warm and neutral palettes.
 
 See [example profiles](../examples/profiles) and [JSON Schema](../examples/profile.schema.json). The runtime validator checks finite numeric bounds and copies only known keys, including fresh palette arrays. Unknown properties are discarded; unknown schema versions are rejected. Imports are capped at 100 KB. Invalid import leaves the current profile intact.
 
 ## Guided listening flow
 
 1. **Bass:** play an isolated short bass followed by a sustain, first left then right. Adjust blue and inspect orb/tube distinction.
-2. **Voice-like study:** use a synthetic vibrato/formant-like tone to choose three pastel associations. Explain that this is a synthetic proxy, not a recorded voice.
-3. **Synth:** inspect a bright harmonic tone and choose the neon palette.
+2. **Voice-like study:** use a synthetic vibrato/formant-like tone to inspect note hues and frequency shades. Explain that this is a synthetic proxy, not a recorded voice.
+3. **Synth:** inspect a bright harmonic tone on the same chromatic rainbow as the voice study.
 4. **Space:** hear a supersaw-like study. Tune width, height and quiet-sound depth; then calibrate the silence gate using the real input.
 5. **Rhythm:** hear original synthesized kicks, snares and sixteenth-note hats at 120 BPM. This temporarily enables automatic interpretation so the actual transient detector drives the polygons.
 

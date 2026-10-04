@@ -101,6 +101,7 @@ export const silentFeatures = (): FeatureFrame => ({
   percussion: [],
 });
 export const emptyScene = (): SceneFrame => ({ time: 0, audible: false, events: [] });
+export const MAX_TONAL_EVENTS = 24;
 export const clamp = (n: number, low = 0, high = 1) =>
   Math.max(low, Math.min(high, Number.isFinite(n) ? n : low));
 export const amplitudeToDb = (value: number) =>
@@ -165,12 +166,12 @@ export function mapFeatures(frame: FeatureFrame, profile: SynestheticProfile): S
         'auto',
   );
   const claimed = new Set(hits.flatMap((hit) => hit.bandIds));
-  const candidates = frame.bands
+  const distinct = frame.bands
     .filter(
       (band) =>
         Number.isFinite(band.db) &&
         band.db > profile.gateDb - 6 &&
-        band.db > strongest - 32 &&
+        band.db > strongest - 40 &&
         !(claimed.has(band.id) && profile.assignments[frequencyRegion(band.frequency)] === 'auto'),
     )
     .sort((a, b) => b.db - a.db)
@@ -180,25 +181,36 @@ export function mapFeatures(frame: FeatureFrame, profile: SynestheticProfile): S
           .slice(0, index)
           .some(
             (stronger) =>
-              Math.abs(Math.log2(band.frequency / stronger.frequency)) < 0.8 &&
+              Math.abs(Math.log2(band.frequency / stronger.frequency)) <
+                (band.pitch && stronger.pitch ? 0.045 : 0.16) &&
               Math.abs(band.pan - stronger.pan) < 0.18 &&
               frequencyRegion(band.frequency) === frequencyRegion(stronger.frequency),
           ),
-    )
-    .slice(0, 14);
+    );
+  // Give audible side detail a share of the bounded pool even under a loud center.
+  const sectors = [
+    distinct.filter((band) => band.pan < -0.25),
+    distinct.filter((band) => Math.abs(band.pan) <= 0.25),
+    distinct.filter((band) => band.pan > 0.25),
+  ];
+  const candidates: BandFeature[] = [];
+  for (let i = 0; candidates.length < MAX_TONAL_EVENTS && i < distinct.length; i++)
+    for (const sector of sectors)
+      if (sector[i] && candidates.length < MAX_TONAL_EVENTS) candidates.push(sector[i]!);
+  candidates.sort((a, b) => b.db - a.db);
   const events = candidates.map((band): VisualEvent => {
     const interpretation = classify(band, profile);
     const { family } = interpretation;
     const pitch = clamp(Math.log2(Math.max(35, band.frequency) / 35) / Math.log2(17000 / 35));
     const intensity = clamp(((band.db - (profile.gateDb - 6)) / 48) * profile.sensitivity, 0.03, 1);
     const pan = clamp(band.pan, -1, 1);
-    const color = band.pitch
-      ? noteColor(family, band.pitch.pitchClass, profile)
-      : family === 'bass'
-        ? profile.colors.bass
-        : family === 'voice'
-          ? profile.colors.voice[0]
-          : profile.colors.synth[0];
+    // Unresolved plumes still receive a frequency-based hue, without claiming a
+    // detected note. A static family fallback otherwise traps dense music in blue.
+    const colorPitch =
+      band.pitch ?? (family !== 'bass' ? pitchFromFrequency(band.frequency, 0) : undefined);
+    const color = colorPitch
+      ? noteColor(family, colorPitch.pitchClass, profile)
+      : profile.colors.bass;
     const form: FormKind =
       family === 'bass'
         ? band.age < 0.28 || band.onset > 0.6 || band.sustainRatio < 0.65
@@ -225,7 +237,11 @@ export function mapFeatures(frame: FeatureFrame, profile: SynestheticProfile): S
       motion: profile.reducedMotion ? 0 : profile.motion,
       glow: profile.glow,
       confidence: interpretation.confidence,
-      reason: interpretation.reason,
+      reason:
+        interpretation.reason +
+        (!band.pitch && family !== 'bass'
+          ? ' Color follows the nearest note-color at this spectral frequency; no stable pitch was detected.'
+          : ''),
       frequency: band.frequency,
       pan,
       db: band.db,
@@ -244,8 +260,11 @@ export function mapFeatures(frame: FeatureFrame, profile: SynestheticProfile): S
       percussion: hit.kind,
       position: [
         clamp(hit.pan, -1, 1) * 5 * profile.stereoSpread,
-        (hit.kind === 'kick' ? -3.3 : hit.kind === 'snare' ? -0.5 + tone * 0.8 : 1.9 + tone * 0.9) *
-          profile.heightSpread,
+        (hit.kind === 'kick'
+          ? -3.3
+          : hit.kind === 'snare'
+            ? -0.5 + tone * 0.8
+            : 3.25 + tone * 0.85) * profile.heightSpread,
         -(1 - intensity) * 4 * profile.depth,
       ],
       color:
@@ -317,20 +336,60 @@ export function mixColor(a: string, b: string, amount: number): string {
   );
 }
 
-/** Pitch class chooses a repeatable family color; octave brightness is applied separately. */
+function colorHsl(color: string): [number, number, number] {
+  const [r, g, b] = [1, 3, 5].map(
+    (offset) => parseInt(color.slice(offset, offset + 2), 16) / 255,
+  ) as [number, number, number];
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    delta = max - min;
+  const lightness = (max + min) / 2;
+  if (delta < 1e-8) return [0, 0, lightness];
+  const hue =
+    max === r ? ((g - b) / delta + 6) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+  return [hue / 6, delta / (1 - Math.abs(2 * lightness - 1)), lightness];
+}
+
+function hslColor(hue: number, saturation: number, lightness: number): string {
+  const h = ((hue % 1) + 1) % 1,
+    s = clamp(saturation),
+    l = clamp(lightness);
+  const a = s * Math.min(l, 1 - l);
+  return (
+    '#' +
+    [0, 8, 4]
+      .map((n) => {
+        const k = (n + h * 12) % 12;
+        const channel = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+        return Math.round(channel * 255)
+          .toString(16)
+          .padStart(2, '0');
+      })
+      .join('')
+  );
+}
+
+/** Preserve the note's hue/chroma while frequency sets its displayed shade. */
+export function shadeColor(color: string, lightness: number): string {
+  const [h, s] = colorHsl(color);
+  return hslColor(h, s, 0.16 + clamp(lightness) * 0.78);
+}
+
+/** C through B traverse the full hue wheel; frequency shading is applied separately. */
+export const RAINBOW_NOTE_COLORS = Array.from({ length: 12 }, (_, note) =>
+  hslColor(note / 12, 0.88, 0.6),
+);
+
+/** Melodic families share one note rainbow. Bass retains its personal blue range. */
 export function noteColor(
   family: SoundFamily,
   pitchClass: number,
   profile: SynestheticProfile,
 ): string {
   const note = ((Math.round(pitchClass) % 12) + 12) % 12;
-  if (family === 'bass')
-    return mixColor(
-      mixColor(profile.colors.bass, '#000000', 0.28),
-      mixColor(profile.colors.bass, '#c4deff', 0.38),
-      note / 11,
-    );
-  const palette = family === 'voice' ? profile.colors.voice : profile.colors.synth;
-  const segment = Math.floor(note / 4);
-  return mixColor(palette[segment]!, palette[(segment + 1) % 3]!, (note % 4) / 4);
+  if (family === 'bass') {
+    const [h, s, l] = colorHsl(profile.colors.bass);
+    return hslColor(h + (note / 11 - 0.5) * 0.09, s * (0.85 + (0.15 * note) / 11), l);
+  }
+  return RAINBOW_NOTE_COLORS[note]!;
 }

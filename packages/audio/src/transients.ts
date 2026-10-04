@@ -20,6 +20,7 @@ interface Region {
   flatness: number;
   frequency: number;
   pan: number;
+  attackPan: number;
   magnitude: number;
 }
 interface State {
@@ -27,12 +28,14 @@ interface State {
   fluxFloor: number;
   magnitude: number;
   pending?: { time: number; frequency: number; strength: number };
-  active?: { id: number; time: number; peak: number; strength: number };
+  active?: { id: number; time: number; peak: number; strength: number; pan: number };
 }
 
 /** Positive spectral flux locates actual attacks; no tempo grid or generated beat clock. */
 export class TransientDetector {
   private previous = new Float32Array(0);
+  private previousLeft = new Float32Array(0);
+  private previousRight = new Float32Array(0);
   private states: State[] = ranges.map(() => ({
     lastAttack: -Infinity,
     fluxFloor: 0,
@@ -44,6 +47,8 @@ export class TransientDetector {
 
   reset() {
     this.previous.fill(0);
+    this.previousLeft.fill(0);
+    this.previousRight.fill(0);
     this.states = ranges.map(() => ({ lastAttack: -Infinity, fluxFloor: 0, magnitude: 0 }));
     this.lastTime = -Infinity;
     this.lastHits = [];
@@ -60,6 +65,8 @@ export class TransientDetector {
   ): PercussionFeature[] {
     if (this.previous.length !== left.length) {
       this.previous = new Float32Array(left.length);
+      this.previousLeft = new Float32Array(left.length);
+      this.previousRight = new Float32Array(left.length);
       this.reset();
     }
     // AudioContext time advances in render quanta; multiple visual samples can
@@ -74,6 +81,8 @@ export class TransientDetector {
         flux = 0,
         lp = 0,
         rp = 0,
+        attackLeft = 0,
+        attackRight = 0,
         maximum = 0,
         weighted = 0,
         count = 0;
@@ -85,6 +94,10 @@ export class TransientDetector {
         const l = 10 ** (left[bin]! / 20),
           r = 10 ** (right[bin]! / 20);
         const magnitude = Math.sqrt((l * l + r * r) / 2);
+        attackLeft += Math.max(0, l * l - this.previousLeft[bin]!);
+        attackRight += Math.max(0, r * r - this.previousRight[bin]!);
+        this.previousLeft[bin] = l * l;
+        this.previousRight[bin] = r * r;
         flux += Math.max(0, magnitude - this.previous[bin]!);
         this.previous[bin] = magnitude;
         sum += magnitude;
@@ -125,6 +138,10 @@ export class TransientDetector {
         flatness,
         frequency: sum > 1e-8 ? weighted / sum : range.low,
         pan: stereoPosition(lp, rp),
+        attackPan:
+          attackLeft + attackRight > 1e-10
+            ? stereoPosition(attackLeft, attackRight)
+            : stereoPosition(lp, rp),
         magnitude,
       };
     });
@@ -168,6 +185,7 @@ export class TransientDetector {
           time,
           peak: region.magnitude,
           strength: Math.max(region.flux, region.rise, 0.25),
+          pan: region.attackPan,
         };
       }
       const active = state.active;
@@ -184,7 +202,7 @@ export class TransientDetector {
             kind,
             frequency: region.frequency,
             db: region.db,
-            pan: region.pan,
+            pan: active.pan,
             age,
             strength: active.strength,
             envelope: Math.sqrt(ratio) * Math.exp(-age / (kind === 'hat' ? 0.038 : 0.16)),

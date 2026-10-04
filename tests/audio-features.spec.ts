@@ -4,6 +4,60 @@ import { resolve } from 'node:path';
 const audioModule = `/@fs/${resolve('packages/audio/src/index.ts').replaceAll('\\', '/')}`;
 const demoModule = `/@fs/${resolve('packages/audio/src/demo.ts').replaceAll('\\', '/')}`;
 
+test('native FFT retains two opposite-side notes within one spectral region', async ({ page }) => {
+  await page.route('**/stereo-fixture', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Start</button>' }),
+  );
+  await page.goto('/stereo-fixture');
+  await page.getByRole('button').click();
+  const bands = await page.evaluate(async (audioModule) => {
+    const { SpectrumAnalyzer, FFT_SIZE } = (await import(
+      audioModule
+    )) as typeof import('../packages/audio/src/index');
+    const ctx = new AudioContext({ sampleRate: 48000 });
+    try {
+      await ctx.resume();
+      const oscillators = [ctx.createOscillator(), ctx.createOscillator()];
+      const analyzers = [ctx.createAnalyser(), ctx.createAnalyser()];
+      const sink = ctx.createGain();
+      sink.gain.value = 0;
+      sink.connect(ctx.destination);
+      for (let i = 0; i < 2; i++) {
+        oscillators[i]!.frequency.value = [523.251, 659.255][i]!;
+        analyzers[i]!.fftSize = FFT_SIZE;
+        analyzers[i]!.smoothingTimeConstant = 0;
+        oscillators[i]!.connect(analyzers[i]!);
+        analyzers[i]!.connect(sink);
+        oscillators[i]!.start();
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const spectral = analyzers.map((analyzer) => {
+        const data = new Float32Array(FFT_SIZE / 2);
+        analyzer.getFloatFrequencyData(data);
+        return data;
+      });
+      const waves = analyzers.map((analyzer) => {
+        const data = new Float32Array(FFT_SIZE);
+        analyzer.getFloatTimeDomainData(data);
+        return data;
+      });
+      return new SpectrumAnalyzer().analyze(
+        spectral[0]!,
+        spectral[1]!,
+        waves[0]!,
+        waves[1]!,
+        ctx.sampleRate,
+        ctx.currentTime,
+        -58,
+      ).bands;
+    } finally {
+      await ctx.close();
+    }
+  }, audioModule);
+  expect(bands.find((band) => band.pitch?.name === 'C5')!.pan).toBeLessThan(-0.95);
+  expect(bands.find((band) => band.pitch?.name === 'E5')!.pan).toBeGreaterThan(0.95);
+});
+
 test('real Web Audio detects rhythm-study kicks, snares, and rapid hats', async ({ page }) => {
   // Exercise real native FFT windows without GPU scheduling hiding short transients.
   await page.route('**/analysis-fixture', (route) =>
