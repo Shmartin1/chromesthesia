@@ -10,6 +10,10 @@ React · TypeScript · React Three Fiber · Web Audio
 
 **Early MVP · MIT licensed · Local by design**
 
+[![Quality](https://github.com/Shmartin1/chromesthesia/actions/workflows/ci.yml/badge.svg)](https://github.com/Shmartin1/chromesthesia/actions/workflows/ci.yml)
+
+[Issues](https://github.com/Shmartin1/chromesthesia/issues) · [Milestones](https://github.com/Shmartin1/chromesthesia/milestones)
+
 </div>
 
 In silence, nothing. A bass pluck becomes a glowing blue rubber orb. A sustained note stretches into a tube. Voice-like textures diffuse into pastel wisps; bright tones become neon; dense chords flicker like multicolored flame. When the sound disappears, the world disappears with it.
@@ -25,6 +29,8 @@ Chromesthesia starts from one person's synesthetic associations and makes them e
 Use **Node 24** (minimum 22.12) and npm. From this repository:
 
 ```sh
+git clone https://github.com/Shmartin1/chromesthesia.git
+cd chromesthesia
 npm ci
 npm run dev
 ```
@@ -91,6 +97,7 @@ npm run format         # Prettier
 npm run check          # Lint + unit tests + typecheck/build + format check
 npx playwright install chromium
 npm run test:e2e        # Real browser audio, transport, profile and layout tests
+npm run screenshots    # Reproduce README screenshots with the original study
 npm run build          # Static output in apps/web/dist
 npm run preview        # Serve production build locally
 ```

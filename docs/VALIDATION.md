@@ -1,5 +1,7 @@
 # Validation record
 
+The initial public revision passed [GitHub Actions on Linux](https://github.com/Shmartin1/chromesthesia/actions/runs/37175047375), including a clean `npm ci`, the full quality gate, and all four Chromium integration tests.
+
 ## Automated coverage
 
 - **19 unit tests**: silence and threshold boundaries, stereo symmetry, antiphase audibility, bass pluck/sustain, frequency-height-lightness ordering, quiet-sound depth, overrides, reduced motion, deterministic mapping, schema bounds, corrupt storage, capture denial, video-only capture, late grant cancellation and browser stop-sharing cleanup.

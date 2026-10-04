@@ -1,0 +1,92 @@
+{
+  "repository": "Shmartin1/chromesthesia",
+  "milestones": {
+    "M0": 1,
+    "M1": 2,
+    "M2": 3,
+    "M3": 4,
+    "M4": 5,
+    "M5": 6,
+    "V1": 7
+  },
+  "issues": [
+    {
+      "id": "CH-01",
+      "number": 1,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/1",
+      "milestone": "M0"
+    },
+    {
+      "id": "CH-02",
+      "number": 2,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/2",
+      "milestone": "M1"
+    },
+    {
+      "id": "CH-03",
+      "number": 3,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/3",
+      "milestone": "M1"
+    },
+    {
+      "id": "CH-04",
+      "number": 4,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/4",
+      "milestone": "M2"
+    },
+    {
+      "id": "CH-05",
+      "number": 5,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/5",
+      "milestone": "M2"
+    },
+    {
+      "id": "CH-06",
+      "number": 6,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/6",
+      "milestone": "M3"
+    },
+    {
+      "id": "CH-07",
+      "number": 7,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/7",
+      "milestone": "M4"
+    },
+    {
+      "id": "CH-08",
+      "number": 8,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/8",
+      "milestone": "M4"
+    },
+    {
+      "id": "CH-09",
+      "number": 9,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/9",
+      "milestone": "M5"
+    },
+    {
+      "id": "CH-10",
+      "number": 10,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/10",
+      "milestone": "V1"
+    },
+    {
+      "id": "CH-11",
+      "number": 11,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/11",
+      "milestone": "V1"
+    },
+    {
+      "id": "CH-12",
+      "number": 12,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/12",
+      "milestone": "V1"
+    },
+    {
+      "id": "CH-13",
+      "number": 13,
+      "url": "https://github.com/Shmartin1/chromesthesia/issues/13",
+      "milestone": "V1"
+    }
+  ]
+}

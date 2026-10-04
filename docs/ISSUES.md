@@ -1,6 +1,6 @@
 # Ordered implementation backlog
 
-These are issue-ready descriptions, not fabricated GitHub issue numbers. `CH-xx` identifiers remain stable before and after publication. Milestones follow dependencies; the app remains runnable at each boundary. The initial implementation combines M0–M5 in this workspace. Completed issues can be published as closed records; open V1 issues form the next roadmap.
+The backlog is published as [GitHub issues](https://github.com/Shmartin1/chromesthesia/issues?q=is%3Aissue) and [milestones](https://github.com/Shmartin1/chromesthesia/milestones). `CH-xx` identifiers remain stable; [the issue index](github-issues.json) maps them to actual URLs. Milestones follow dependencies; the app remains runnable at each boundary. The initial implementation combines M0–M5 in this workspace. Completed implementation issues are closed records; device verification and V1 issues remain open.
 
 | Milestone               | Issues       | Runnable outcome                                 | State                                |
 | ----------------------- | ------------ | ------------------------------------------------ | ------------------------------------ |
@@ -9,7 +9,7 @@ These are issue-ready descriptions, not fabricated GitHub issue numbers. `CH-xx`
 | M2 · Inputs             | CH-04, CH-05 | File, microphone and shared-audio paths          | Implemented; real capture QA pending |
 | M3 · The world          | CH-06        | Five forms, silence gate, immersive mode         | Implemented                          |
 | M4 · Perception         | CH-07, CH-08 | Profiles, calibration and inspector              | Implemented                          |
-| M5 · Release foundation | CH-09        | Tests, CI, docs, screenshots and examples        | Implemented; public release pending  |
+| M5 · Release foundation | CH-09        | Tests, CI, docs, screenshots and examples        | Published; initial GitHub CI passed  |
 | V1 · Listening accuracy | CH-10–CH-13  | Validated perception and reliable stem inputs    | Planned                              |
 
 ## CH-01 · Establish the typed workspace and runnable shell
@@ -62,7 +62,7 @@ Display measured level, gate, centroid, stereo balance, active events, mapping r
 
 ## CH-09 · Establish the public project presentation and quality gate
 
-**Depends on:** CH-05–CH-08. **Milestone:** M5. **Status:** local implementation complete; GitHub destination pending.
+**Depends on:** CH-05–CH-08. **Milestone:** M5. **Status:** implemented and published; CI validation is tracked in GitHub.
 
 Write PRD, architecture diagram, setup, limitations, profile examples/schema, contribution guide, screenshots/demo slot, roadmap, issue templates and CI. Acceptance: checks and browser tests pass locally; no audio/private files are committed; remote CI and issue publication are verified separately after a destination is confirmed.
 
