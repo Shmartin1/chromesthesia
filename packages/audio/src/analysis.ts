@@ -13,11 +13,13 @@ export const BAND_EDGES = [
 export class SpectrumAnalyzer {
   private ages = new Float64Array(BAND_EDGES.length - 1);
   private previous = new Float64Array(BAND_EDGES.length - 1);
+  private peaks = new Float64Array(BAND_EDGES.length - 1);
   private lastTime = 0;
 
   reset() {
     this.ages.fill(0);
     this.previous.fill(0);
+    this.peaks.fill(0);
     this.lastTime = 0;
   }
 
@@ -77,6 +79,12 @@ export class SpectrumAnalyzer {
       const db = amplitudeToDb(maxMagnitude);
       const onset = clamp((maxMagnitude - this.previous[id]!) / Math.max(maxMagnitude, 1e-8));
       this.ages[id] = db > gateDb - 6 ? (onset > 0.75 ? 0 : this.ages[id]! + dt) : 0;
+      this.peaks[id] =
+        db <= gateDb - 6
+          ? 0
+          : onset > 0.75
+            ? maxMagnitude
+            : Math.max(this.peaks[id]!, maxMagnitude);
       this.previous[id] = maxMagnitude;
       weightedFrequency += center;
       totalMagnitude += arithmetic;
@@ -89,6 +97,7 @@ export class SpectrumAnalyzer {
           arithmetic > 1e-10 ? clamp(Math.exp(logarithmic / count) / (arithmetic / count)) : 0,
         onset,
         age: this.ages[id]!,
+        sustainRatio: this.peaks[id]! > 0 ? clamp(maxMagnitude / this.peaks[id]!) : 0,
       };
     });
     return {

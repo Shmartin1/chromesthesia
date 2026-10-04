@@ -45,7 +45,7 @@ void main() {
     float warp=fbm(flow+fbm(flow+t*0.09)*3.0);
     float filament=pow(max(0.0,1.0-abs(sin((p.x+warp*0.9)*13.0+p.y*4.0))),6.0);
     float veil=fbm(vec2(p.x*4.0+warp*2.0,p.y*2.0-t*0.2));
-    float edge=pow(max(0.0,1.0-dot(p,p)*0.65),2.0)*smoothstep(1.0,0.65,abs(p.x));
+    float edge=pow(max(0.0,1.0-dot(p,p)*0.65),2.0)*(1.0-smoothstep(0.65,1.0,abs(p.x)));
     alpha=(filament*0.46+veil*0.30)*edge;
     color=mix(uColor,vec3(0.95),0.14+0.15*veil);
   } else {
@@ -53,7 +53,7 @@ void main() {
     float tongues=fbm(vec2(p.x*7.0+warp*2.0,p.y*2.0-t*0.6));
     float height=1.0-vUv.y;
     float body=smoothstep(0.25,0.8,tongues+height*0.6);
-    float edge=smoothstep(1.0,0.65,abs(p.x))*sin(vUv.y*3.14159);
+    float edge=(1.0-smoothstep(0.65,1.0,abs(p.x)))*sin(vUv.y*3.14159);
     alpha=body*edge*0.85;
     vec3 rainbow=0.55+0.45*cos(vec3(0.0,2.1,4.2)+p.x*3.6+warp*4.0+uSeed);
     color=mix(uColor,rainbow,0.65)*(0.7+body*0.6);

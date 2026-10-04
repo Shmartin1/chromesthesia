@@ -15,6 +15,7 @@ const band: BandFeature = {
   flatness: 0.01,
   onset: 0,
   age: 0.1,
+  sustainRatio: 1,
 };
 const frame = (patch: Partial<BandFeature> = {}): FeatureFrame => ({
   ...silentFeatures(),
@@ -45,6 +46,14 @@ describe('sound → world invariants', () => {
     expect(pluck.form).toBe('orb');
     expect(pluck.color).toBe(defaultProfile.colors.bass);
     expect(mapFeatures(frame({ age: 0.5 }), defaultProfile).events[0]!.form).toBe('tube');
+  });
+  it('keeps a decaying bass pluck round even after the initial attack window', () => {
+    expect(
+      mapFeatures(frame({ age: 0.6, sustainRatio: 0.2 }), defaultProfile).events[0]!.form,
+    ).toBe('orb');
+    expect(
+      mapFeatures(frame({ age: 0.6, sustainRatio: 0.95 }), defaultProfile).events[0]!.form,
+    ).toBe('tube');
   });
   it('makes higher frequencies lighter and higher; quiet forms farther away', () => {
     const low = mapFeatures(frame(), defaultProfile).events[0]!;

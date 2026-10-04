@@ -27,6 +27,7 @@ export interface BandFeature {
   flatness: number;
   onset: number;
   age: number;
+  sustainRatio: number;
 }
 
 export interface FeatureFrame {
@@ -160,7 +161,7 @@ export function mapFeatures(frame: FeatureFrame, profile: SynestheticProfile): S
           : profile.colors.synth[paletteIndex]!;
     const form: FormKind =
       family === 'bass'
-        ? band.age < 0.28 || band.onset > 0.6
+        ? band.age < 0.28 || band.onset > 0.6 || band.sustainRatio < 0.65
           ? 'orb'
           : 'tube'
         : family === 'voice'
