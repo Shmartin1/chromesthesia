@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "name": "Quiet perception",
+  "gateDb": -58,
+  "sensitivity": 1,
+  "stereoSpread": 1,
+  "heightSpread": 1,
+  "depth": 0.75,
+  "motion": 0.2,
+  "glow": 0.5,
+  "reducedMotion": true,
+  "colors": {
+    "bass": "#2266ff",
+    "voice": ["#a6cfff", "#f5acd3", "#f4e5a0"],
+    "synth": ["#a07aff", "#4af5d0", "#ff69b0"]
+  },
+  "assignments": { "low": "auto", "mid": "auto", "high": "auto" }
+}

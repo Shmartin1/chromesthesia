@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Chromesthesia synesthetic profile v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "name",
+    "gateDb",
+    "sensitivity",
+    "stereoSpread",
+    "heightSpread",
+    "depth",
+    "motion",
+    "glow",
+    "reducedMotion",
+    "colors",
+    "assignments"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "\\S" },
+    "gateDb": { "type": "number", "minimum": -80, "maximum": -25 },
+    "sensitivity": { "type": "number", "minimum": 0.3, "maximum": 3 },
+    "stereoSpread": { "type": "number", "minimum": 0.3, "maximum": 1.6 },
+    "heightSpread": { "type": "number", "minimum": 0.3, "maximum": 1.6 },
+    "depth": { "type": "number", "minimum": 0, "maximum": 1.5 },
+    "motion": { "type": "number", "minimum": 0, "maximum": 1.5 },
+    "glow": { "type": "number", "minimum": 0, "maximum": 1.5 },
+    "reducedMotion": { "type": "boolean" },
+    "colors": {
+      "type": "object",
+      "required": ["bass", "voice", "synth"],
+      "properties": {
+        "bass": { "$ref": "#/$defs/color" },
+        "voice": { "$ref": "#/$defs/palette" },
+        "synth": { "$ref": "#/$defs/palette" }
+      }
+    },
+    "assignments": {
+      "type": "object",
+      "required": ["low", "mid", "high"],
+      "properties": {
+        "low": { "$ref": "#/$defs/family" },
+        "mid": { "$ref": "#/$defs/family" },
+        "high": { "$ref": "#/$defs/family" }
+      }
+    }
+  },
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+    "palette": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/color" }
+    },
+    "family": { "enum": ["auto", "bass", "voice", "synth", "supersaw"] }
+  }
+}

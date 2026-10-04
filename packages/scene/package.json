@@ -1,0 +1,13 @@
+{
+  "name": "@chromesthesia/scene",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.tsx",
+  "dependencies": {
+    "@chromesthesia/core": "*",
+    "react": "19.3.0",
+    "three": "0.186.1",
+    "@react-three/fiber": "9.8.1"
+  }
+}
