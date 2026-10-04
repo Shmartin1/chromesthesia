@@ -1,4 +1,4 @@
-import { silentFeatures, type FeatureFrame, type SoundFamily } from '@chromesthesia/core';
+import { silentFeatures, type FeatureFrame, type StudyKind } from '@chromesthesia/core';
 import { FFT_SIZE, SpectrumAnalyzer } from './analysis';
 import { makeDemo } from './demo';
 export { SpectrumAnalyzer, FFT_SIZE, BAND_EDGES } from './analysis';
@@ -169,7 +169,7 @@ export class AudioEngine {
     this.update({ state: 'playing' });
   }
 
-  async startDemo(isolate?: SoundFamily) {
+  async startDemo(isolate?: StudyKind) {
     const ticket = this.begin(
       'demo',
       isolate ? `${isolate} · calibration tone` : 'First light · a stereo study',

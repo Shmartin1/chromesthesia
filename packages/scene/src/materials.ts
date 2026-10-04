@@ -5,17 +5,28 @@ import {
   FrontSide,
   NormalBlending,
   ShaderMaterial,
+  Vector3,
 } from 'three';
 import type { FormKind } from '@chromesthesia/core';
 
 const shared = `
-uniform float uPhase, uEnergy, uImpulse, uTravel, uMotion, uGlow, uWeight, uLightness, uSeed;
+uniform float uPhase, uEnergy, uImpulse, uMotion, uGlow, uWeight, uLightness, uSeed;
 uniform vec3 uColor;
+uniform vec3 uPulseAges, uPulseStrengths;
 varying vec3 vNormal, vView;
 varying vec2 vUv;
 varying float vLane;
 const float PI = 3.14159265359;
 float bell(float x, float width) { return exp(-x*x*width); }
+float musicalPulse(float position) {
+  float result=0.0;
+  for(int i=0;i<3;i++) {
+    float age=uPulseAges[i];
+    float envelope=(1.0-exp(-age*55.0))*exp(-age*3.5);
+    result+=bell(position-age*1.7,70.0)*uPulseStrengths[i]*envelope;
+  }
+  return result;
+}
 `;
 
 const vertex = `
@@ -56,7 +67,7 @@ void main() {
   vec3 p, n;
   #ifdef FORM_ORB
     vUv=uv; vLane=0.0;
-    float ripple = sin(position.y*6.0-uTravel*12.0)*uImpulse*0.06;
+    float ripple = sin(position.y*5.0-uPhase*8.0)*uImpulse*0.045;
     float squeeze = uImpulse*0.16;
     p = position*(1.0+ripple);
     p *= vec3(1.0+squeeze*0.5, 1.0-squeeze, 1.0+squeeze*0.5);
@@ -77,10 +88,10 @@ void main() {
       n=side*cos(v*PI*2.0)+binormal*sin(v*PI*2.0);
       #ifdef FORM_TUBE
         float radius=tubeRadius(u);
-        radius *= 1.0+sin(u*9.0-uTravel*11.0)*uImpulse*0.10;
+        radius *= 1.0+sin(u*7.0-uPhase*7.0)*uImpulse*0.08;
       #else
         float radius=(lane==2.0?0.036:0.017)*taper;
-        radius *= 1.0+bell(u-uTravel*1.7,80.0)*uImpulse*0.8;
+        radius *= 1.0+musicalPulse(u)*uMotion*0.3;
       #endif
       p=center+n*radius;
       #ifdef FORM_TUBE
@@ -144,7 +155,7 @@ void main() {
       color*=energy;
     #endif
     #ifdef FORM_NEON
-      float pulse=bell(vUv.x-uTravel*1.7,100.0)*abs(uImpulse);
+      float pulse=musicalPulse(vUv.x)*uMotion;
       float core=pow(facing,7.0);
       color=mix(uColor,vec3(0.92,0.96,1.0),core*0.34)*(1.05+pulse*1.4);
       alpha*=energy*(0.65+core*0.35);
@@ -164,7 +175,7 @@ void main() {
       float flame=0.5+0.5*sin(vUv.x*19.0-uPhase*2.4+vLane*0.65);
       float thread=pow(0.5+0.5*sin(vUv.y*58.0+vUv.x*14.0-uPhase),12.0);
       vec3 spectrum=0.48+0.42*cos(vec3(0.2,2.3,4.4)+vLane*0.43+vUv.x*1.8);
-      color=mix(uColor,spectrum,0.78);
+      color=mix(uColor,spectrum,0.38);
       color=mix(color,vec3(1.0,0.91,0.72),pow(1.0-vUv.x,4.0)*0.4);
       color*=1.2+flame*0.6+thread*0.45+fresnel*0.6;
       alpha*=edge*ends*energy*(0.45+flame*0.24);
@@ -185,7 +196,8 @@ export function createMaterial(form: FormKind, aura = false) {
       uPhase: { value: 0 },
       uEnergy: { value: 0 },
       uImpulse: { value: 0 },
-      uTravel: { value: 0 },
+      uPulseAges: { value: new Vector3(10, 10, 10) },
+      uPulseStrengths: { value: new Vector3() },
       uMotion: { value: 0 },
       uGlow: { value: 0 },
       uWeight: { value: 0 },
@@ -198,6 +210,8 @@ export function createMaterial(form: FormKind, aura = false) {
     transparent: true,
     depthWrite: false,
     side: additive ? DoubleSide : FrontSide,
+    // Additive ribbons do not need separate front/back transparency sorting.
+    forceSinglePass: additive,
     blending: additive ? AdditiveBlending : NormalBlending,
     toneMapped: !additive,
   });

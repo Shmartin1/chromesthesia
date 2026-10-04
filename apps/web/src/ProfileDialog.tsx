@@ -2,7 +2,9 @@ import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { motion, useIsPresent } from 'motion/react';
 import {
   type FamilyChoice,
-  type SoundFamily,
+  type StudyKind,
+  NOTE_NAMES,
+  noteColor,
   type SynestheticProfile,
   type SceneFrame,
 } from '@chromesthesia/core';
@@ -54,22 +56,27 @@ const calibrationSteps = [
   {
     title: 'Find your blue.',
     text: 'Listen to the bass pluck, then its longer sustain. Adjust its color until it feels familiar.',
-    family: 'bass' as SoundFamily,
+    family: 'bass' as StudyKind,
   },
   {
     title: 'Let the voice diffuse.',
     text: 'This synthetic vowel-like tone is a stand-in for a voice. Choose the pastel shades you associate with it.',
-    family: 'voice' as SoundFamily,
+    family: 'voice' as StudyKind,
   },
   {
     title: 'Give brightness a shape.',
     text: 'Compare a neon tone with the supersaw study. Shape overrides remain available for real music.',
-    family: 'synth' as SoundFamily,
+    family: 'synth' as StudyKind,
   },
   {
     title: 'Place it in your space.',
     text: 'The studies move from left to right. Tune width, height, and depth. Then set the silence threshold with your real input.',
-    family: 'supersaw' as SoundFamily,
+    family: 'supersaw' as StudyKind,
+  },
+  {
+    title: 'See the rhythm.',
+    text: 'A 120 BPM study: sixteenth-note hats, round black kicks, and warm clap-like bursts. Each shape follows a detected attack.',
+    family: 'percussion' as StudyKind,
   },
 ];
 export function ProfileDialog({
@@ -88,7 +95,7 @@ export function ProfileDialog({
   onClose: () => void;
   engine: AudioEngine;
   saved: boolean;
-  onPreview: (family: SoundFamily | null) => void;
+  onPreview: (family: StudyKind | null) => void;
   frame: RefObject<SceneFrame>;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
@@ -177,7 +184,7 @@ export function ProfileDialog({
           <>
             <div>
               <strong>A small listening ritual</strong>
-              <p>Four short studies to find your colors and space.</p>
+              <p>Five short studies to find your colors and space.</p>
             </div>
             <button className="secondary" onClick={() => setStep(0)}>
               Calibrate <Icon name="arrow" size={15} />
@@ -185,7 +192,9 @@ export function ProfileDialog({
           </>
         ) : (
           <div className="calibration-content">
-            <span className="eyebrow">STUDY {step + 1} / 4</span>
+            <span className="eyebrow">
+              STUDY {step + 1} / {calibrationSteps.length}
+            </span>
             <h3>{calibrationSteps[step]!.title}</h3>
             <p>{calibrationSteps[step]!.text}</p>
             <div className="calibration-preview">
@@ -207,10 +216,11 @@ export function ProfileDialog({
                 onClick={() => {
                   engine.stop();
                   onPreview(null);
-                  setStep(step === 3 ? null : step + 1);
+                  setStep(step === calibrationSteps.length - 1 ? null : step + 1);
                 }}
               >
-                {step === 3 ? 'Finish' : 'Next study'} <Icon name="arrow" size={14} />
+                {step === calibrationSteps.length - 1 ? 'Finish' : 'Next study'}{' '}
+                <Icon name="arrow" size={14} />
               </button>
             </div>
             <small>
@@ -257,10 +267,33 @@ export function ProfileDialog({
             </span>
             <div className="button-row">{colors('synth')}</div>
           </div>
+          <h3>Notes become color</h3>
+          <p className="small muted">
+            The same note returns to the same family color. Higher octaves become lighter. Noise and
+            uncertain pitches keep the family base color.
+          </p>
+          {(['bass', 'voice', 'synth'] as const).map((family) => (
+            <div className="note-palette" key={family}>
+              <span>{family}</span>
+              <div>
+                {NOTE_NAMES.map((name, index) => (
+                  <span className="note-chip" key={name} title={`${family} · ${name}`}>
+                    <i style={{ background: noteColor(family, index, profile) }} />
+                    <small>{name}</small>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p className="small muted">
+            Drums keep their own colors: black kicks, beige to orange snares and claps, gray to
+            white hats and shakers.
+          </p>
           <h3>Interpretation overrides</h3>
           <p className="small muted">
             Apply a shape family to a frequency region. This changes the interpretation; it does not
-            separate instruments.
+            separate instruments. A manual override also suppresses automatic drum polygons in that
+            region.
           </p>
           {(['low', 'mid', 'high'] as const).map((region) => (
             <label className="select-label" key={region}>

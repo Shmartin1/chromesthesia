@@ -18,7 +18,7 @@ import {
   silentFeatures,
   type FeatureFrame,
   type SceneFrame,
-  type SoundFamily,
+  type StudyKind,
   type SynestheticProfile,
 } from '@chromesthesia/core';
 import { defaultProfile, loadProfile, saveProfile } from '@chromesthesia/profiles';
@@ -36,6 +36,12 @@ const shapeNames = {
   wisp: 'Pastel wisp',
   neon: 'Neon tube',
   flame: 'Flame sheet',
+  polygon: 'Percussion shape',
+};
+const drumNames = {
+  kick: 'Round kick',
+  snare: 'Clap / snare burst',
+  hat: 'Hat / shaker polygon',
 };
 
 class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -95,7 +101,7 @@ export function App() {
   const fileInput = useRef<HTMLInputElement>(null),
     file = useRef<File | null>(null);
   const frame = useRef<SceneFrame>(emptyScene()),
-    calibrationPreview = useRef<SoundFamily | null>(null);
+    calibrationPreview = useRef<StudyKind | null>(null);
   const [telemetry, setTelemetry] = useState<{
     features: FeatureFrame;
     scene: SceneFrame;
@@ -124,9 +130,11 @@ export function App() {
       const preview = calibrationPreview.current;
       frame.current = mapFeatures(
         features,
-        preview
+        preview && preview !== 'percussion'
           ? { ...profile, assignments: { low: preview, mid: preview, high: preview } }
-          : profile,
+          : preview === 'percussion'
+            ? { ...profile, assignments: { low: 'auto', mid: 'auto', high: 'auto' } }
+            : profile,
       );
       counter++;
       if (now - previousFps > 1000) {
@@ -413,6 +421,11 @@ export function App() {
                 <span>Synth</span>
                 <small>Neon & flame</small>
               </div>
+              <div>
+                <i className="legend-polygon" />
+                <span>Drums</span>
+                <small>Facets & flicker</small>
+              </div>
             </div>
             <div className="sidebar-footer">
               <Icon name="info" size={14} />
@@ -593,26 +606,52 @@ export function App() {
                   <span className="eyebrow">WHAT BECAME VISIBLE</span>
                 </div>
                 <div className="event-list" aria-label="Current mappings">
-                  {telemetry.scene.events.slice(0, 4).map((event) => (
-                    <details key={event.id} className="event-card">
-                      <summary>
-                        <span className="event-swatch" style={{ background: event.color }} />
-                        <span>
-                          <strong>{shapeNames[event.form]}</strong>
-                          <small>
-                            {Math.round(event.frequency)} Hz · {event.db.toFixed(0)} dBFS
-                          </small>
-                        </span>
-                        <Icon name="chevron" size={12} />
-                      </summary>
-                      <p>{event.reason}</p>
-                      <p>
-                        {event.confidence === 1
-                          ? 'Manual assignment'
-                          : `Heuristic score ${Math.round(event.confidence * 100)}% · not a calibrated probability`}
-                      </p>
-                    </details>
-                  ))}
+                  {[...telemetry.scene.events]
+                    .sort((a, b) => Number(!!b.percussion) - Number(!!a.percussion))
+                    .slice(0, 5)
+                    .map((event) => (
+                      <details
+                        key={event.percussion ?? event.id}
+                        className="event-card"
+                        data-percussion={event.percussion}
+                      >
+                        <summary>
+                          <span className="event-swatch" style={{ background: event.color }} />
+                          <span>
+                            <strong>
+                              {event.percussion
+                                ? drumNames[event.percussion]
+                                : shapeNames[event.form]}
+                            </strong>
+                            <small>
+                              {event.pitch ? `≈ ${event.pitch.name} · ` : ''}
+                              {Math.round(event.frequency)} Hz · {event.db.toFixed(0)} dBFS
+                            </small>
+                          </span>
+                          <Icon name="chevron" size={12} />
+                        </summary>
+                        <p>{event.reason}</p>
+                        {event.pitch && (
+                          <p>
+                            Estimated spectral note, A4 = 440 Hz ·{' '}
+                            {event.pitch.cents > 0 ? '+' : ''}
+                            {event.pitch.cents} cents. Note chooses color within this family; octave
+                            controls lightness. Harmonics can appear as additional notes.
+                          </p>
+                        )}
+                        {event.percussion && (
+                          <p>
+                            Attack {Math.round(event.onset * 100)}% · {Math.round(event.age * 1000)}{' '}
+                            ms since onset. No generated beat grid.
+                          </p>
+                        )}
+                        <p>
+                          {event.confidence === 1
+                            ? 'Manual assignment'
+                            : `Heuristic score ${Math.round(event.confidence * 100)}% · not a calibrated probability`}
+                        </p>
+                      </details>
+                    ))}
                   {!activeCount && (
                     <div className="empty-mappings">
                       <Icon name="wave" size={26} />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VisualEvent } from '@chromesthesia/core';
-import { SoundTransition, spring } from './transition';
+import { SoundTransition, spring, recoil } from './transition';
 
 const sound: VisualEvent = {
   id: 0,
@@ -23,6 +23,51 @@ const sound: VisualEvent = {
 };
 
 describe('active sound transitions', () => {
+  it('keeps deformation continuous when another attack arrives, including overlapping traveling accents', () => {
+    const transition = new SoundTransition();
+    transition.sample({ ...sound, onset: 1, age: 0 }, 0);
+    const running = transition.sample({ ...sound, age: 0.09 }, 0.09)!;
+    const impulse = running.impulse,
+      phase = running.phase;
+    const previousPulse = running.pulses[0]!.age;
+    const attack = transition.sample({ ...sound, onset: 1, age: 0 }, 0)!;
+    expect(attack.impulse).toBeCloseTo(impulse, 12);
+    expect(attack.phase).toBe(phase);
+    expect(attack.pulses[0]!.age).toBe(previousPulse);
+    expect(attack.pulses.filter((pulse) => pulse.strength > 0)).toHaveLength(2);
+    expect(attack.pulses.some((pulse) => pulse.age === 0 && pulse.strength > 0)).toBe(true);
+    expect(transition.sample(undefined, 0)).toBeNull();
+  });
+
+  it('integrates elastic motion consistently across refresh rates', () => {
+    const once = recoil(0.2, 3, 0.3);
+    let steps = { position: 0.2, velocity: 3 };
+    for (let i = 0; i < 72; i++) steps = recoil(steps.position, steps.velocity, 0.3 / 72);
+    expect(steps.position).toBeCloseTo(once.position, 12);
+    expect(steps.velocity).toBeCloseTo(once.velocity, 12);
+  });
+
+  it('softens audible entrances without delaying their first visible frame or adding a release tail', () => {
+    const transition = new SoundTransition();
+    const first = transition.sample(sound, 0)!;
+    expect(first.presence).toBeGreaterThan(0);
+    expect(first.presence).toBeLessThan(1);
+    expect(transition.sample(sound, 0.06)!.presence).toBeGreaterThan(0.95);
+    expect(transition.sample(undefined, 0)).toBeNull();
+    expect(transition.sample(sound, 0, true)!.presence).toBe(1);
+  });
+
+  it('preserves size momentum on a rapid direction change and avoids a procedural jump after a stall', () => {
+    const transition = new SoundTransition();
+    transition.sample(sound, 0);
+    const growing = transition.sample({ ...sound, scale: 2 }, 0.03)!.event.scale;
+    const redirected = transition.sample({ ...sound, scale: 0.5 }, 0.001)!;
+    expect(redirected.event.scale).toBeGreaterThan(growing);
+    const phase = redirected.phase;
+    expect(transition.sample(sound, 2)!.phase - phase).toBeLessThan(0.05);
+    expect(transition.sample(sound, 0)!.event.scale).toBeCloseTo(sound.scale, 8);
+  });
+
   it('preserves velocity through target changes and settles without frame-step instability', () => {
     const first = spring(0, 0, 1, 0.05);
     const redirected = spring(first.position, first.velocity, -1, 0);
@@ -94,6 +139,6 @@ describe('active sound transitions', () => {
     expect(Object.values(blended.weights).reduce((a, b) => a + b)).toBeCloseTo(1);
     const reduced = transition.sample(target, 0, true)!;
     expect(reduced.event.position).toEqual(target.position);
-    expect(reduced.weights).toEqual({ orb: 0, tube: 1, neon: 0, wisp: 0, flame: 0 });
+    expect(reduced.weights).toEqual({ orb: 0, tube: 1, neon: 0, wisp: 0, flame: 0, polygon: 0 });
   });
 });

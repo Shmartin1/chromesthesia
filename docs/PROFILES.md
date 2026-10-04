@@ -17,7 +17,9 @@ The default profile translates the owner's description. It is not a universal sy
 | `colors.voice`, `colors.synth` | Exactly three six-digit hex colors each               |
 | `assignments.low/mid/high`     | `auto`, `bass`, `voice`, `synth`, `supersaw`          |
 
-Low is below 220 Hz, mid 220–2,600 Hz, high above 2,600 Hz. Overrides apply to spectral regions and can affect multiple instruments. They are not stem-specific rules.
+Low is below 220 Hz, mid 220–2,600 Hz, high above 2,600 Hz. Overrides apply to spectral regions and can affect multiple instruments. They also suppress automatic drum interpretations in the overridden region. They are not stem-specific rules.
+
+Note colors are derived from these existing anchors without changing the JSON schema: twelve blue shades for bass and twelve interpolated colors for each voice/synth palette. Changing an anchor updates the visible C–B palette in the editor. Note colors repeat across octaves; octave brightness is independent. Percussion retains its fixed black, warm and neutral palettes.
 
 See [example profiles](../examples/profiles) and [JSON Schema](../examples/profile.schema.json). The runtime validator checks finite numeric bounds and copies only known keys, including fresh palette arrays. Unknown properties are discarded; unknown schema versions are rejected. Imports are capped at 100 KB. Invalid import leaves the current profile intact.
 
@@ -27,6 +29,7 @@ See [example profiles](../examples/profiles) and [JSON Schema](../examples/profi
 2. **Voice-like study:** use a synthetic vibrato/formant-like tone to choose three pastel associations. Explain that this is a synthetic proxy, not a recorded voice.
 3. **Synth:** inspect a bright harmonic tone and choose the neon palette.
 4. **Space:** hear a supersaw-like study. Tune width, height and quiet-sound depth; then calibrate the silence gate using the real input.
+5. **Rhythm:** hear original synthesized kicks, snares and sixteenth-note hats at 120 BPM. This temporarily enables automatic interpretation so the actual transient detector drives the polygons.
 
 The study temporarily previews the selected form family for all regions. Temporary interpretation never overwrites saved region overrides. Next, Finish, and Close end the preview. Palette and control edits apply immediately and persist locally. Calibration does not infer psychological traits, train a model or claim to diagnose synesthesia.
 

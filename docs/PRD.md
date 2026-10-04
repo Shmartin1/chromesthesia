@@ -8,15 +8,19 @@ Transform listening into an abstract 3D world that exists only while sound is au
 
 The founding perception is the default, not a claim about everybody's synesthesia:
 
-| Sound impression         | Form                               | Color                     |
-| ------------------------ | ---------------------------------- | ------------------------- |
-| Bass pluck               | Rubbery orb with outer glow        | Blue                      |
-| Sustained bass           | Thick rubbery tube                 | Blue                      |
-| Voice-like texture       | Wisps, like food coloring in water | Pastel blue, pink, yellow |
-| Synth-like tone          | Neon tube                          | Personal neon palette     |
-| Supersaw-like chord      | Broad flame sheet                  | Multicolored              |
-| Lower / higher frequency | Lower / higher placement           | Darker / lighter shading  |
-| Inaudible sound          | No form                            | Pure black                |
+| Sound impression         | Form                               | Color                                      |
+| ------------------------ | ---------------------------------- | ------------------------------------------ |
+| Bass pluck               | Rubbery orb with outer glow        | Blue                                       |
+| Sustained bass           | Thick rubbery tube                 | Blue                                       |
+| Voice-like texture       | Wisps, like food coloring in water | Pastel blue, pink, yellow                  |
+| Synth-like tone          | Neon tube                          | Personal neon palette                      |
+| Supersaw-like chord      | Broad flame sheet                  | Multicolored                               |
+| Lower / higher frequency | Lower / higher placement           | Darker / lighter shading                   |
+| Kick-like attack         | Round beveled disc near bottom     | Black with charcoal reflection             |
+| Snare / clap attack      | Coarse, rounded sunburst blob      | Beige to orange                            |
+| Hat / shaker attack      | Small flickering faceted solid     | Gray to white                              |
+| Resolved note / partial  | Existing family form               | Consistent pitch-class color within family |
+| Inaudible sound          | No form                            | Pure black                                 |
 
 ## Audience and primary journey
 
@@ -39,9 +43,9 @@ React + React Three Fiber + Web Audio, static hosting, npm workspaces, MIT licen
 - Four inputs with explicit capture permission, cancellation, teardown, errors, and file transport.
 - Stereo FFT, waveform RMS/peak, frequency centroid, band energy/pan/flatness, attack and duration features.
 - Pure feature-to-scene mapping with audibility gate and no artificial release trails.
-- Five form treatments in a black 3D scene; bounded geometry and shader complexity.
+- Five tonal form treatments plus solid drum polygons in a black 3D scene; bounded geometry and shader complexity.
 - Profile editor: color palettes, motion, glow, spatial spread, sensitivity, gate, region overrides.
-- Four-step calibration with original synthetic studies and temporary shape previews.
+- Five-step calibration with original synthetic studies and temporary shape previews.
 - Optional inspector with raw measurements, mappings, reasons, heuristic scores, and timing estimates.
 - Keyboard controls, reduced motion, local persistence, schema validation, unit and browser tests, CI and docs.
 
@@ -72,7 +76,7 @@ Optional local source-separation preprocessing, MIDI/note-aware inputs, personal
 
 ## Known perceptual limits
 
-Frequency regions are not instruments or notes. Dense mixes can merge sources, one source can produce multiple harmonic events, and perceived positions are spectral energy estimates. The digital gate cannot know headphone volume or a person's hearing threshold. Capture analysis sees the incoming source without replaying it. “Confidence” is an explanatory heuristic score, not a measured probability.
+Frequency regions are not instruments. Resolved spectral peaks provide approximate note/partial labels, not full polyphonic transcription. Drum labels are transient-based interpretations. Dense mixes can merge sources, one source can produce multiple harmonic events, and perceived positions are spectral energy estimates. The digital gate cannot know headphone volume or a person's hearing threshold. Capture analysis sees the incoming source without replaying it. “Confidence” is an explanatory heuristic score, not a measured probability.
 
 ## Decision gates
 

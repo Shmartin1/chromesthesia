@@ -5,6 +5,8 @@ import {
   stereoPosition,
   type FeatureFrame,
 } from '@chromesthesia/core';
+import { TransientDetector } from './transients';
+import { spectralPitch } from './pitch';
 
 export const FFT_SIZE = 2048;
 export const BAND_EDGES = [
@@ -15,12 +17,15 @@ export class SpectrumAnalyzer {
   private previous = new Float64Array(BAND_EDGES.length - 1);
   private peaks = new Float64Array(BAND_EDGES.length - 1);
   private lastTime = 0;
+  private transients = new TransientDetector();
+  private magnitudes = new Float32Array(FFT_SIZE / 2);
 
   reset() {
     this.ages.fill(0);
     this.previous.fill(0);
     this.peaks.fill(0);
     this.lastTime = 0;
+    this.transients.reset();
   }
 
   analyze(
@@ -54,6 +59,12 @@ export class SpectrumAnalyzer {
     let weightedFrequency = 0,
       totalMagnitude = 0;
     const binHz = sampleRate / (leftDb.length * 2);
+    if (this.magnitudes.length !== leftDb.length) this.magnitudes = new Float32Array(leftDb.length);
+    for (let bin = 0; bin < leftDb.length; bin++) {
+      const l = 10 ** (leftDb[bin]! / 20),
+        r = 10 ** (rightDb[bin]! / 20);
+      this.magnitudes[bin] = Math.sqrt((l * l + r * r) / 2);
+    }
     const bands = BAND_EDGES.slice(0, -1).map((low, id) => {
       const high = BAND_EDGES[id + 1]!;
       const start = Math.max(1, Math.ceil(low / binHz));
@@ -63,7 +74,8 @@ export class SpectrumAnalyzer {
         arithmetic = 0,
         logarithmic = 0,
         maxMagnitude = 0,
-        center = 0;
+        center = 0,
+        peakBin = start;
       for (let bin = start; bin <= end; bin++) {
         const l = 10 ** ((leftDb[bin] ?? -120) / 20),
           r = 10 ** ((rightDb[bin] ?? -120) / 20);
@@ -73,7 +85,10 @@ export class SpectrumAnalyzer {
         arithmetic += magnitude;
         logarithmic += Math.log(Math.max(1e-12, magnitude));
         center += magnitude * bin * binHz;
-        maxMagnitude = Math.max(maxMagnitude, magnitude);
+        if (magnitude > maxMagnitude) {
+          maxMagnitude = magnitude;
+          peakBin = bin;
+        }
       }
       const count = Math.max(1, end - start + 1);
       const db = amplitudeToDb(maxMagnitude);
@@ -88,13 +103,36 @@ export class SpectrumAnalyzer {
       this.previous[id] = maxMagnitude;
       weightedFrequency += center;
       totalMagnitude += arithmetic;
+      const flatness =
+        arithmetic > 1e-10 ? clamp(Math.exp(logarithmic / count) / (arithmetic / count)) : 0;
+      // Narrow low bands contain too few bins for a useful flatness measure. Inspect the
+      // surrounding peak over a wider neighborhood before deciding whether it is tonal.
+      let pitchFlatness = flatness;
+      if (high <= 220) {
+        const start = Math.max(1, peakBin - 5),
+          end = Math.min(this.magnitudes.length - 1, peakBin + 5);
+        let sum = 0,
+          log = 0;
+        for (let bin = start; bin <= end; bin++) {
+          sum += this.magnitudes[bin]!;
+          log += Math.log(Math.max(this.magnitudes[bin]!, 1e-12));
+        }
+        pitchFlatness =
+          Math.exp(log / (end - start + 1)) / Math.max(sum / (end - start + 1), 1e-12);
+      }
+      const pitch =
+        db > gateDb - 6 ? spectralPitch(this.magnitudes, peakBin, binHz, pitchFlatness) : undefined;
       return {
         id,
         db,
-        frequency: arithmetic > 1e-10 ? center / arithmetic : Math.sqrt(low * high),
+        frequency: pitch
+          ? 440 * 2 ** ((pitch.midi + pitch.cents / 100 - 69) / 12)
+          : arithmetic > 1e-10
+            ? center / arithmetic
+            : Math.sqrt(low * high),
         pan: stereoPosition(lp, rp),
-        flatness:
-          arithmetic > 1e-10 ? clamp(Math.exp(logarithmic / count) / (arithmetic / count)) : 0,
+        flatness,
+        pitch,
         onset,
         age: this.ages[id]!,
         sustainRatio: this.peaks[id]! > 0 ? clamp(maxMagnitude / this.peaks[id]!) : 0,
@@ -107,6 +145,7 @@ export class SpectrumAnalyzer {
       centroid: totalMagnitude ? weightedFrequency / totalMagnitude : 0,
       stereo: stereoPosition(leftPower, rightPower),
       bands,
+      percussion: this.transients.analyze(leftDb, rightDb, sampleRate, time, gateDb, bands),
     };
   }
 }

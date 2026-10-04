@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Color, Group, Mesh, ShaderMaterial } from 'three';
+import { Color, Group, Mesh, ShaderMaterial, Vector3 } from 'three';
 import type { FormKind, SceneFrame } from '@chromesthesia/core';
 import { createGeometries } from './geometry';
 import { createMaterial } from './materials';
 import { SoundTracker } from './tracking';
 import { SoundTransition } from './transition';
+import { PercussionForms } from './percussion';
 
 const forms = ['orb', 'tube', 'neon', 'wisp', 'flame'] as const;
 const auraForms = ['orb', 'tube', 'neon'] as const;
@@ -23,10 +24,16 @@ function updateMaterial(
   u.uPhase!.value = state.phase;
   u.uEnergy!.value = event.intensity;
   u.uImpulse!.value = state.impulse;
-  u.uTravel!.value = state.travel;
+  const pulses = state.pulses;
+  (u.uPulseAges!.value as Vector3).set(pulses[0]!.age, pulses[1]!.age, pulses[2]!.age);
+  (u.uPulseStrengths!.value as Vector3).set(
+    pulses[0]!.strength,
+    pulses[1]!.strength,
+    pulses[2]!.strength,
+  );
   u.uMotion!.value = reducedMotion ? 0 : event.motion;
   u.uGlow!.value = event.glow;
-  u.uWeight!.value = weight;
+  u.uWeight!.value = weight * state.presence;
   u.uLightness!.value = event.lightness;
   u.uSeed!.value = seed;
   (u.uColor!.value as Color).copy(state.color);
@@ -87,13 +94,22 @@ function SoundForm({
     g.position.x *= Math.min(1, viewport.width / 14);
     // More generous silhouettes reveal surface detail without moving their stereo anchors.
     g.scale.setScalar(event.scale * 1.2 * Math.min(1, viewport.width / 7.5));
+    const bassWeight = weights.orb + weights.tube;
+    if (bassWeight > 0.002) {
+      // Keep the lower register near the bottom without clipping the tube or orb.
+      const halfHeight = (viewport.height * (10 - event.position[2] - g.scale.x * 0.35)) / 20;
+      const radius = g.scale.x * (0.95 + (weights.tube / bassWeight) * 0.95);
+      g.position.y += Math.max(0, -halfHeight + radius + 0.22 - g.position.y) * bassWeight;
+    }
     for (const form of forms) {
       meshes.current[form]!.visible = weights[form] > 0.002;
-      updateMaterial(materials[form], state, slot * 1.618, weights[form], reducedMotion);
+      if (meshes.current[form]!.visible)
+        updateMaterial(materials[form], state, slot * 1.618, weights[form], reducedMotion);
     }
     for (const form of auraForms) {
       halos.current[form]!.visible = weights[form] > 0.002 && event.glow > 0;
-      updateMaterial(auras[form], state, slot * 1.618, weights[form], reducedMotion);
+      if (halos.current[form]!.visible)
+        updateMaterial(auras[form], state, slot * 1.618, weights[form], reducedMotion);
     }
   });
   return (
@@ -141,10 +157,13 @@ function World({ frame, reducedMotion }: { frame: RefObject<SceneFrame>; reduced
   );
   // Run once before any form updates, not independently in each slot.
   useFrame(() => {
-    tracker.update(frame.current.audible ? frame.current.events : []);
+    tracker.update(
+      frame.current.audible ? frame.current.events.filter((event) => event.form !== 'polygon') : [],
+    );
   }, -1);
   return (
     <>
+      <PercussionForms frame={frame} reducedMotion={reducedMotion} />
       {Array.from({ length: 15 }, (_, slot) => (
         <SoundForm
           key={slot}

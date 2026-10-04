@@ -1,7 +1,7 @@
-import type { SoundFamily } from '@chromesthesia/core';
+import type { SoundFamily, StudyKind, PercussionKind } from '@chromesthesia/core';
 
 /** Original procedural stereo study. Synthetic voice-like tones, not recorded vocals. */
-export function makeDemo(context: AudioContext, isolate?: SoundFamily): AudioBuffer {
+export function makeDemo(context: AudioContext, isolate?: StudyKind): AudioBuffer {
   const rate = context.sampleRate;
   const duration = isolate ? 6 : 24;
   const buffer = context.createBuffer(2, rate * duration, rate);
@@ -46,7 +46,46 @@ export function makeDemo(context: AudioContext, isolate?: SoundFamily): AudioBuf
       right[index] = right[index]! + sound * envelope * rg;
     }
   }
-  if (isolate) {
+  function drum(start: number, kind: PercussionKind, pan: number, level = 1) {
+    const length = kind === 'kick' ? 0.28 : kind === 'snare' ? 0.18 : 0.062;
+    const lg = Math.cos(((pan + 1) * Math.PI) / 4),
+      rg = Math.sin(((pan + 1) * Math.PI) / 4);
+    let seed = (Math.floor(start * rate) + 1) >>> 0;
+    let low = 0,
+      previous = 0,
+      high = 0,
+      previousHigh = 0,
+      high2 = 0;
+    const hp = Math.exp((-2 * Math.PI * 6500) / rate);
+    for (let n = 0; n < Math.floor(length * rate); n++) {
+      const index = Math.floor(start * rate) + n;
+      if (index >= left.length) break;
+      const t = n / rate;
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      const noise = (seed / 4294967296) * 2 - 1;
+      low += (noise - low) * (1 - Math.exp((-2 * Math.PI * 3200) / rate));
+      high = hp * (high + noise - previous);
+      previous = noise;
+      high2 = hp * (high2 + high - previousHigh);
+      previousHigh = high;
+      const envelope =
+        Math.min(1, t / 0.001) * Math.exp(-t * (kind === 'kick' ? 17 : kind === 'snare' ? 28 : 65));
+      const sound =
+        kind === 'kick'
+          ? Math.sin(2 * Math.PI * (48 * t + 95 * 0.025 * (1 - Math.exp(-t / 0.025)))) * 0.8
+          : kind === 'snare'
+            ? low * 0.8 + Math.sin(2 * Math.PI * 185 * t) * 0.07
+            : high2 * 0.55;
+      left[index] = left[index]! + sound * envelope * lg * level;
+      right[index] = right[index]! + sound * envelope * rg * level;
+    }
+  }
+  if (isolate === 'percussion') {
+    for (let i = 0; i < 36; i++) drum(0.3 + i * 0.125, 'hat', 0.55, i % 4 === 0 ? 1 : 0.65);
+    for (let i = 0; i < 9; i++) {
+      drum(0.3 + i * 0.5, i % 2 === 0 ? 'kick' : 'snare', i % 2 === 0 ? -0.25 : 0.05);
+    }
+  } else if (isolate) {
     const hz = { bass: 73.42, voice: 293.66, synth: 587.33, supersaw: 220 }[isolate];
     note(0.2, 1.1, hz, -0.6, isolate);
     note(1.6, 3.5, hz * 1.5, 0.6, isolate, true);
@@ -71,6 +110,9 @@ export function makeDemo(context: AudioContext, isolate?: SoundFamily): AudioBuf
       [329.63, 0.65],
     ])
       note(16, 4.3, hz!, pan!, 'supersaw');
+    for (let i = 0; i < 96; i++) drum(8.3 + i * 0.125, 'hat', 0.6, i % 4 ? 0.45 : 0.7);
+    for (let i = 0; i < 24; i++)
+      drum(8.3 + i * 0.5, i % 2 ? 'snare' : 'kick', i % 2 ? 0.1 : -0.3, 0.6);
     // The last three seconds are exact digital silence: a deliberate void check.
   }
   return buffer;

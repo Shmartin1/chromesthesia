@@ -16,13 +16,13 @@ React · TypeScript · React Three Fiber · Web Audio
 
 </div>
 
-In silence, nothing. A bass pluck becomes a glowing blue rubber orb. A sustained note stretches into a tube. Voice-like textures diffuse into pastel wisps; bright tones become neon; dense chords flicker like multicolored flame. When the sound disappears, the world disappears with it.
+In silence, nothing. A bass pluck becomes a glowing blue rubber orb. A sustained note stretches into a tube. Voice-like textures diffuse into pastel wisps; bright tones become neon; dense chords flicker like multicolored flame. Drum attacks become solid forms: round black kicks, warm irregular clap/snare bursts, and small silver hat/shaker flickers. When the sound disappears, the world disappears with it.
 
 Chromesthesia starts from one person's synesthetic associations and makes them editable. It is a coherent abstract listening space, with stereo placement, pitch-driven height and brightness, and quiet sounds that recede into black.
 
 ![Chromesthesia sculptural sound world](docs/media/live-world.png)
 
-The scene uses elastic attack response, continuous curved surfaces, translucent ribbon folds, luminous filaments, and stable tracking across frequency regions. Motion follows the audio while every form still disappears immediately in silence.
+The scene uses elastic attack response, continuous curved surfaces, translucent ribbon folds, luminous filaments, and stable tracking across frequency regions. Motion preserves momentum and wave phase across audio updates, with overlapping accents following new attacks. Every form still disappears immediately in silence.
 
 > **An interpretation, not instrument separation.** The MVP measures stereo energy, frequency and texture, then applies transparent heuristics. Overlapping sounds in a finished mix cannot be reliably identified or positioned independently. The inspector explains the interpretation, and your profile can override it.
 
@@ -52,13 +52,17 @@ No audio is uploaded, and profiles stay on your device unless you export them. A
 
 ## Make it yours
 
-Open **Your perception** to choose colors, motion, glow, stereo width, pitch height, depth, sensitivity and a silence threshold. Four short calibration studies help you explore associations; the voice study is synthesized, not recorded singing. Preview shapes never replace your saved overrides.
+Open **Your perception** to choose colors, motion, glow, stereo width, pitch height, depth, sensitivity and a silence threshold. Five short calibration studies help you explore associations; the voice study is synthesized, not recorded singing. Preview shapes never replace your saved overrides.
 
 - **Low:** below 220 Hz; defaults to blue bass forms.
 - **Mid:** 220–2,600 Hz; texture-based voice/synth/flame interpretations.
 - **High:** above 2,600 Hz; brighter, higher forms.
 
-Region overrides make the interpretation explicit. Import/export portable JSON or try [First perception](examples/profiles/first-perception.json) and [Quiet perception](examples/profiles/quiet-perception.json). Profile data is versioned and validated. Read the [profile design](docs/PROFILES.md).
+Twelve note colors are derived from each family palette: bass stays blue, while voices and synths use their own colors. Repeated pitch classes return to the same color; higher octaves are lighter. The inspector labels resolved spectral notes (A4 = 440 Hz). Uncertain/noisy energy keeps a base color.
+
+The fifth calibration study adds a 120 BPM rhythm with sixteenth-note hats. Polygons respond to measured transients, without a generated visual beat grid. Black kicks use subtle charcoal reflections so they remain legible against the void.
+
+Region overrides make the interpretation explicit and suppress automatic percussion in that region. Import/export portable JSON or try [First perception](examples/profiles/first-perception.json) and [Quiet perception](examples/profiles/quiet-perception.json). Profile data is versioned and validated. Read the [profile design](docs/PROFILES.md).
 
 **Space** plays/pauses (or stops live input). **F** enters immersion. **Escape** returns to controls. The canvas is pure black in silence; normal-mode labels and controls are outside the world. Reduced motion removes drift and wobble, while sound-driven appearance still works.
 
@@ -108,7 +112,8 @@ GitHub Actions runs the quality gate and Chromium tests. See [validation and man
 
 ## Roadmap
 
-- [x] Black void, five form treatments, stereo placement and immediate gating
+- [x] Black void, sculptural tonal forms, solid percussion, stereo placement and immediate gating
+- [x] Spectral note colors, transient-driven drum articulation and low bass placement
 - [x] Local files, original study, microphone and tab/system input adapters
 - [x] Personal profiles, synthetic calibration, import/export and reduced motion
 - [x] Measured-feature inspector, tests, CI and modular workspace
@@ -124,7 +129,7 @@ GitHub Actions runs the quality gate and Chromium tests. See [validation and man
 
 The playable demo is bundled in the app. [Interface screenshot](docs/media/experience.png) · [Live scene](docs/media/live-world.png).
 
-Isolated rendering studies use original synthetic audio and explicit profile overrides to make each material easy to review: [rubber orb](docs/media/bass-orb.png), [sustained tube](docs/media/bass-tube.png), [voice ribbons](docs/media/voice.png), [synth filaments](docs/media/synth.png), and [flame curtain](docs/media/flame.png). These are material demonstrations, not classifier benchmarks.
+Isolated rendering studies use original synthetic audio and explicit profile overrides to make each material easy to review: [rubber orb](docs/media/bass-orb.png), [sustained tube](docs/media/bass-tube.png), [voice ribbons](docs/media/voice.png), [synth filaments](docs/media/synth.png), and [flame curtain](docs/media/flame.png). A [controlled percussion rendering study](docs/media/percussion.png) shows the three percussion materials using fixed mapping events. These images are material demonstrations, not classifier benchmarks.
 
 **Public demo:** deployment URL pending. **Demo video:** reserved for a 20–30 second capture showing bass → wisps/neon → dense chord → silence, followed by one profile edit. Use the original study or appropriately licensed audio.
 

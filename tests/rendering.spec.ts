@@ -61,15 +61,27 @@ for (const study of studies) {
       buffer: studyWav(study.hz, study.pluck),
     });
     await expect(page.getByTestId('event-count')).not.toHaveText('00');
+    if (study.name === 'synth')
+      await expect(page.getByLabel('Current mappings')).toContainText('E5');
     await page.getByRole('slider', { name: 'Playback position', exact: true }).fill('1.2');
     await page.getByRole('button', { name: 'Enter immersive view' }).click();
     const canvas = page.locator('canvas');
     const first = await canvas.screenshot();
     const png = PNG.sync.read(first);
-    let bright = 0;
+    let bright = 0,
+      heightSum = 0,
+      bottom = 0;
     for (let i = 0; i < png.data.length; i += 4)
-      if (Math.max(png.data[i]!, png.data[i + 1]!, png.data[i + 2]!) > 30) bright++;
+      if (Math.max(png.data[i]!, png.data[i + 1]!, png.data[i + 2]!) > 30) {
+        bright++;
+        heightSum += Math.floor(i / 4 / png.width);
+        bottom = Math.max(bottom, Math.floor(i / 4 / png.width));
+      }
     expect(bright).toBeGreaterThan(1000);
+    if (study.family === 'bass') {
+      expect(heightSum / bright / png.height).toBeGreaterThan(0.65);
+      expect(bottom).toBeLessThan(png.height - 10);
+    }
     if (process.env.CHROMESTHESIA_SCREENSHOTS)
       await canvas.screenshot({ path: `docs/media/${study.name}.png` });
     await expect.poll(async () => Buffer.compare(first, await canvas.screenshot())).not.toBe(0);
