@@ -4,8 +4,8 @@ The initial public revision passed [GitHub Actions on Linux](https://github.com/
 
 ## Automated coverage
 
-- **20 unit tests**: silence and threshold boundaries, stereo symmetry, antiphase audibility, bass pluck/sustain including decaying plucks, frequency-height-lightness ordering, quiet-sound depth, overrides, reduced motion, deterministic mapping, schema bounds, corrupt storage, capture denial, video-only capture, late grant cancellation and browser stop-sharing cleanup.
-- **4 Chromium integration tests**: actual Web Audio demo and local stereo WAV analysis; play/pause/mute/seek; immersive Escape; profile persistence/import errors/calibration override preservation; narrow-screen source and inspector controls.
+- **23 unit tests**: silence and threshold boundaries, stereo symmetry, antiphase audibility, bass pluck/sustain including decaying plucks, frequency-height-lightness ordering, quiet-sound depth, overrides, reduced motion, deterministic mapping, schema bounds, corrupt storage, capture denial, video-only capture, late grant cancellation and browser stop-sharing cleanup. Scene transition tests cover frame-rate independence, conserved shape weights, immutable mapping input, reduced-motion bypass, immediate silence and clean restart.
+- **6 Chromium integration tests**: actual Web Audio demo and local stereo WAV analysis; play/pause/mute/seek; immersive Escape; profile persistence/import errors/calibration override preservation; narrow-screen source and inspector controls; animated panel reversal and modal focus restoration; reduced-motion defaults and a persistent user override.
 - **Pixel check**: with interface chrome hidden, every rendered canvas pixel is black at startup and after pause. Playing audio produces non-black pixels. Ordinary DOM overlays are intentionally excluded by using immersive mode.
 - TypeScript strict checks, ESLint, Prettier and a production Vite build are part of `npm run check`.
 

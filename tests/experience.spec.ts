@@ -16,6 +16,11 @@ test('silence, playback, pause, mute, seek, and immersive escape', async ({ page
   await expect(page.getByTestId('event-count')).toHaveText('00');
   if (process.env.CHROMESTHESIA_SCREENSHOTS) {
     await page.evaluate(() => document.fonts.ready);
+    await expect(page.locator('.void-intro')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.void-intro h2 em > span > span').last()).toHaveCSS(
+      'filter',
+      'blur(0px)',
+    );
     await page.screenshot({ path: 'docs/media/experience.png' });
   }
   await page.getByRole('button', { name: 'Enter immersive view' }).click();
@@ -40,6 +45,7 @@ test('silence, playback, pause, mute, seek, and immersive escape', async ({ page
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Pause audio' }).click();
   await expect(page.getByTestId('event-count')).toHaveText('00');
+  await expect(page.getByText(/the sound has faded/i)).toHaveCount(0);
   await page.getByRole('button', { name: 'Enter immersive view' }).click();
   expect(litPixels(await page.locator('canvas').screenshot())).toBe(0);
   await expect(page.locator('.topbar')).toBeHidden();
@@ -123,4 +129,59 @@ test('mobile layout keeps sources and playback reachable', async ({ page }) => {
   await expect(
     page.getByRole('complementary', { name: 'Live translation inspector' }),
   ).toBeVisible();
+});
+
+test('animated panels remain reversible and the profile restores keyboard focus', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const inspector = page.getByRole('complementary', { name: 'Live translation inspector' });
+  const toggle = page.getByRole('button', { name: 'Toggle live inspector' });
+  await toggle.click();
+  await expect(inspector).toBeHidden();
+  await toggle.click();
+  await expect(inspector).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'The idea' }).click();
+  await expect(page.locator('.about-panel')).toHaveCSS('opacity', '1');
+  await page.getByRole('button', { name: 'Close the idea' }).click();
+  await expect(page.locator('.about-panel')).toBeHidden();
+  const opener = page.getByRole('button', { name: 'Your perception', exact: true });
+  await opener.click();
+  await expect(page.getByRole('dialog')).toHaveCSS('opacity', '1');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await page.getByRole('button', { name: 'Close profile', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.getByRole('button', { name: 'Begin the study' }).click();
+  await expect(page.getByTestId('event-count')).not.toHaveText('00');
+  await expect(page.locator('.void-intro')).toBeHidden();
+  await page.getByRole('button', { name: 'Stop all audio' }).click();
+});
+
+test('reduced motion skips decorative transitions and keeps silence black', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await expect(page.locator('.app')).toHaveAttribute('data-reduced-motion', 'true');
+  await expect(page.locator('.workspace')).toHaveCSS('transition-duration', '0s');
+  await expect(page.locator('.void-intro h2 em > span > span').last()).toHaveCSS(
+    'filter',
+    'blur(0px)',
+  );
+  await page.getByRole('button', { name: 'Your perception', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: 'Reduced motion' })).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.getByRole('button', { name: 'Enter immersive view' }).click();
+  expect(litPixels(await page.locator('canvas').screenshot())).toBe(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Your perception', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Reduced motion' }).uncheck();
+  await expect(page.locator('.app')).toHaveAttribute('data-reduced-motion', 'false');
+  await expect(page.locator('.workspace')).toHaveCSS('transition-duration', '0.42s');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.reload();
+  await expect(page.locator('.app')).toHaveAttribute('data-reduced-motion', 'false');
 });

@@ -9,13 +9,14 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@chromesthesia/core": "*",
     "@chromesthesia/audio": "*",
+    "@chromesthesia/core": "*",
     "@chromesthesia/profiles": "*",
     "@chromesthesia/scene": "*",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
     "@fontsource-variable/dm-sans": "5.3.0",
-    "@fontsource-variable/manrope": "5.3.0"
+    "@fontsource-variable/manrope": "5.3.0",
+    "motion": "14.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   }
 }

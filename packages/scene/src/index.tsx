@@ -17,6 +17,7 @@ import {
   Vector3,
 } from 'three';
 import type { SceneFrame, VisualEvent } from '@chromesthesia/core';
+import { SoundTransition } from './transition';
 
 const noise = `
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -85,16 +86,23 @@ function makeMaterial() {
     toneMapped: false,
   });
 }
-function updateMaterial(material: ShaderMaterial, event: VisualEvent, time: number, kind = 0) {
+function updateMaterial(
+  material: ShaderMaterial,
+  event: VisualEvent,
+  color: Color,
+  time: number,
+  kind = 0,
+  weight = 1,
+) {
   const u = material.uniforms;
   u.uTime!.value = time;
   u.uMotion!.value = event.motion;
-  u.uEnergy!.value = event.intensity;
+  u.uEnergy!.value = event.intensity * weight;
   u.uGlow!.value = event.glow;
   u.uSeed!.value = event.id * 3.17;
   u.uKind!.value = kind;
   u.uLightness!.value = event.lightness;
-  (u.uColor!.value as Color).set(event.color);
+  (u.uColor!.value as Color).copy(color);
 }
 function createGeometries() {
   return {
@@ -119,27 +127,42 @@ function SoundForm({
   id,
   frame,
   geometries,
+  reducedMotion,
 }: {
   id: number;
   frame: RefObject<SceneFrame>;
   geometries: ReturnType<typeof createGeometries>;
+  reducedMotion: boolean;
 }) {
   const group = useRef<Group>(null);
   const orb = useRef<Mesh>(null),
     tube = useRef<Mesh>(null),
     neon = useRef<Mesh>(null),
-    mist = useRef<Mesh>(null),
+    wisp = useRef<Mesh>(null),
+    flame = useRef<Mesh>(null),
     halo = useRef<Mesh>(null);
+  const transition = useMemo(() => new SoundTransition(), []);
   const materials = useMemo(
     () => ({
-      surface: new MeshPhysicalMaterial({
+      orb: new MeshPhysicalMaterial({
         roughness: 0.3,
         metalness: 0.12,
         clearcoat: 0.9,
         clearcoatRoughness: 0.18,
+        transparent: true,
+        depthWrite: false,
       }),
-      neon: new MeshBasicMaterial({ toneMapped: false }),
-      air: makeMaterial(),
+      tube: new MeshPhysicalMaterial({
+        roughness: 0.3,
+        metalness: 0.12,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.18,
+        transparent: true,
+        depthWrite: false,
+      }),
+      neon: new MeshBasicMaterial({ toneMapped: false, transparent: true, depthWrite: false }),
+      wisp: makeMaterial(),
+      flame: makeMaterial(),
       halo: makeMaterial(),
     }),
     [],
@@ -148,36 +171,41 @@ function SoundForm({
     () => () => Object.values(materials).forEach((material) => material.dispose()),
     [materials],
   );
-  useFrame(({ viewport }) => {
-    const event = frame.current.events.find((event) => event.id === id);
+  useFrame(({ viewport }, delta) => {
+    const target = frame.current.audible
+      ? frame.current.events.find((event) => event.id === id)
+      : undefined;
+    const state = transition.sample(target, delta, reducedMotion);
     const g = group.current!;
-    g.visible = !!event;
-    if (!event) return;
+    g.visible = !!state;
+    if (!state) return;
+    const { event, color, weights } = state;
     g.position.set(...event.position);
     g.position.x *= Math.min(1, viewport.width / 14);
     g.scale.setScalar(event.scale);
     const time = frame.current.time;
     g.rotation.z = event.motion * Math.sin(time * 0.25 + id) * 0.08;
-    orb.current!.visible = event.form === 'orb';
-    tube.current!.visible = event.form === 'tube';
-    neon.current!.visible = event.form === 'neon';
-    mist.current!.visible = event.form === 'wisp' || event.form === 'flame';
+    orb.current!.visible = weights.orb > 0.001;
+    tube.current!.visible = weights.tube > 0.001;
+    neon.current!.visible = weights.neon > 0.001;
+    wisp.current!.visible = weights.wisp > 0.001;
+    flame.current!.visible = weights.flame > 0.001;
     halo.current!.visible = event.glow > 0;
-    const tubeScale = event.form === 'tube' ? 1.4 : 1;
+    const tubeScale = 1 + weights.tube * 0.4;
     halo.current!.scale.set(2.8, 2.8 * tubeScale, 1);
-    mist.current!.scale.set(
-      event.form === 'flame' ? 3.1 : 2.6,
-      event.form === 'flame' ? 2.8 : 3.5,
-      1,
-    );
     const wobble = Math.sin(time * 5 + id) * event.motion * 0.065;
     orb.current!.scale.set(1 + wobble, 1 - wobble, 1);
-    materials.surface.color.set(event.color).multiplyScalar(0.45 + event.lightness);
-    materials.surface.emissive.copy(materials.surface.color);
-    materials.surface.emissiveIntensity = event.glow * 0.13;
-    materials.neon.color.set(event.color).multiplyScalar(0.7 + event.lightness);
-    updateMaterial(materials.air, event, time, event.form === 'wisp' ? 1 : 2);
-    updateMaterial(materials.halo, event, time);
+    for (const form of ['orb', 'tube'] as const) {
+      materials[form].color.copy(color).multiplyScalar(0.45 + event.lightness);
+      materials[form].emissive.copy(materials[form].color);
+      materials[form].emissiveIntensity = event.glow * 0.13;
+      materials[form].opacity = weights[form];
+    }
+    materials.neon.color.copy(color).multiplyScalar(0.7 + event.lightness);
+    materials.neon.opacity = weights.neon;
+    updateMaterial(materials.wisp, event, color, time, 1, weights.wisp);
+    updateMaterial(materials.flame, event, color, time, 2, weights.flame);
+    updateMaterial(materials.halo, event, color, time);
   });
   return (
     <group ref={group} visible={false}>
@@ -187,19 +215,30 @@ function SoundForm({
         material={materials.halo}
         position={[0, 0, -0.15]}
       />
-      <mesh ref={orb} geometry={geometries.orb} material={materials.surface} />
+      <mesh ref={orb} geometry={geometries.orb} material={materials.orb} />
       <mesh
         ref={tube}
         geometry={geometries.tube}
-        material={materials.surface}
+        material={materials.tube}
         rotation={[0.1, 0, 0.45]}
       />
       <mesh ref={neon} geometry={geometries.neon} material={materials.neon} scale={1.45} />
-      <mesh ref={mist} geometry={geometries.plane} material={materials.air} />
+      <mesh
+        ref={wisp}
+        geometry={geometries.plane}
+        material={materials.wisp}
+        scale={[2.6, 3.5, 1]}
+      />
+      <mesh
+        ref={flame}
+        geometry={geometries.plane}
+        material={materials.flame}
+        scale={[3.1, 2.8, 1]}
+      />
     </group>
   );
 }
-function World({ frame }: { frame: RefObject<SceneFrame> }) {
+function World({ frame, reducedMotion }: { frame: RefObject<SceneFrame>; reducedMotion: boolean }) {
   const geometries = useMemo(createGeometries, []);
   useEffect(
     () => () => Object.values(geometries).forEach((geometry) => geometry.dispose()),
@@ -211,7 +250,13 @@ function World({ frame }: { frame: RefObject<SceneFrame> }) {
       <directionalLight position={[-4, 6, 8]} intensity={3} />
       <directionalLight position={[4, -1, -3]} intensity={1.2} color="#647dff" />
       {Array.from({ length: 15 }, (_, id) => (
-        <SoundForm key={id} id={id} frame={frame} geometries={geometries} />
+        <SoundForm
+          key={id}
+          id={id}
+          frame={frame}
+          geometries={geometries}
+          reducedMotion={reducedMotion}
+        />
       ))}
     </>
   );
@@ -219,9 +264,11 @@ function World({ frame }: { frame: RefObject<SceneFrame> }) {
 export function SynestheticScene({
   frame,
   paused = false,
+  reducedMotion = false,
 }: {
   frame: RefObject<SceneFrame>;
   paused?: boolean;
+  reducedMotion?: boolean;
 }) {
   return (
     <Canvas
@@ -233,7 +280,7 @@ export function SynestheticScene({
       onCreated={({ gl }) => gl.setClearColor('#000000', 1)}
     >
       <color attach="background" args={['#000000']} />
-      <World frame={frame} />
+      <World frame={frame} reducedMotion={reducedMotion} />
     </Canvas>
   );
 }

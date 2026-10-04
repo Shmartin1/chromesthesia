@@ -128,4 +128,4 @@ The playable demo is bundled in the app. [Interface screenshot](docs/media/exper
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md). Small improvements grounded in a concrete listening example are welcome. Preserve black-on-silence, local processing, input cleanup and understandable mapping rules.
 
-[MIT license](LICENSE). Procedural study audio is part of this project; bundled dependency assets retain their respective licenses.
+Original project code and procedural study audio: [MIT license](LICENSE). The interface incorporates adapted [React Bits](https://reactbits.dev/) Blur Text and Spotlight Card components, which retain their **MIT + Commons Clause** license. See [third-party notices](THIRD_PARTY_NOTICES.md) for the exact scope and attribution; bundled dependencies and fonts retain their respective licenses.

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { motion, useIsPresent } from 'motion/react';
 import {
   type FamilyChoice,
   type SoundFamily,
@@ -73,6 +74,7 @@ const calibrationSteps = [
 ];
 export function ProfileDialog({
   profile,
+  reducedMotion,
   onChange,
   onClose,
   engine,
@@ -81,6 +83,7 @@ export function ProfileDialog({
   frame,
 }: {
   profile: SynestheticProfile;
+  reducedMotion: boolean;
   onChange: (value: SynestheticProfile) => void;
   onClose: () => void;
   engine: AudioEngine;
@@ -92,8 +95,16 @@ export function ProfileDialog({
     importInput = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<number | null>(null),
     [error, setError] = useState('');
-  useEffect(() => {
-    dialog.current!.showModal();
+  const isPresent = useIsPresent();
+  useLayoutEffect(() => {
+    const element = dialog.current!;
+    const opener = document.activeElement;
+    element.showModal();
+    return () => {
+      element.close();
+      if (opener instanceof HTMLElement && opener.isConnected)
+        opener.focus({ preventScroll: true });
+    };
   }, []);
   function update(patch: Partial<SynestheticProfile>) {
     onChange({ ...profile, ...patch });
@@ -136,10 +147,17 @@ export function ProfileDialog({
     ));
   }
   return (
-    <dialog
+    <motion.dialog
+      initial={{ opacity: 0, y: reducedMotion ? 0 : 18, scale: reducedMotion ? 1 : 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: reducedMotion ? 0 : 10, scale: reducedMotion ? 1 : 0.99 }}
+      data-closing={!isPresent}
       ref={dialog}
       className="profile-dialog"
-      onCancel={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
       aria-labelledby="profile-heading"
     >
       <div className="dialog-heading">
@@ -171,7 +189,7 @@ export function ProfileDialog({
             <h3>{calibrationSteps[step]!.title}</h3>
             <p>{calibrationSteps[step]!.text}</p>
             <div className="calibration-preview">
-              <SynestheticScene frame={frame} />
+              <SynestheticScene frame={frame} reducedMotion={reducedMotion} />
             </div>
             <div className="button-row">
               <button
@@ -375,6 +393,6 @@ export function ProfileDialog({
           event.target.value = '';
         }}
       />
-    </dialog>
+    </motion.dialog>
   );
 }

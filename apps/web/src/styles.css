@@ -65,7 +65,9 @@ button {
   transition:
     background 0.18s,
     color 0.18s,
-    border-color 0.18s;
+    border-color 0.25s,
+    box-shadow 0.25s,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 button:hover {
   color: #fff;
@@ -128,8 +130,7 @@ button:hover {
 .nav-item.selected {
   color: #eee;
 }
-.nav-item.selected:after {
-  content: '';
+.nav-indicator {
   position: absolute;
   height: 2px;
   background: #c2b7fb;
@@ -164,11 +165,12 @@ button:hover {
 .workspace {
   display: grid;
   grid-template-columns: 280px minmax(280px, 1fr) 268px;
+  transition: grid-template-columns 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   flex: 1;
   min-height: 660px;
 }
 .workspace.without-inspector {
-  grid-template-columns: 280px minmax(280px, 1fr);
+  grid-template-columns: 280px minmax(280px, 1fr) 0px;
 }
 .sidebar {
   padding: 35px 25px 24px;
@@ -221,6 +223,9 @@ button:hover {
   gap: 7px;
 }
 .source-option {
+  width: 100%;
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   text-align: left;
@@ -234,8 +239,7 @@ button:hover {
   background: #151419;
 }
 .source-option.active {
-  background: #19161f;
-  border-color: #3c334d;
+  border-color: transparent;
 }
 .source-icon {
   color: #91909f;
@@ -289,6 +293,7 @@ button:hover {
   color: #ddd0ff;
 }
 .perception-card {
+  width: 100%;
   text-align: left;
   border: 1px solid var(--line);
   background: #111115;
@@ -431,7 +436,7 @@ button:hover {
   top: 50%;
   left: 50%;
   width: 90%;
-  transform: translate(-50%, -52%);
+  translate: -50% -52%;
   text-align: center;
   display: flex;
   align-items: center;
@@ -537,6 +542,8 @@ button:hover {
   font-size: 9px;
 }
 .inspector {
+  min-width: 0;
+  width: 268px;
   background: #0a0a0d;
   border-left: 1px solid var(--line);
   padding: 31px 23px 24px;
@@ -924,15 +931,6 @@ input[type='range']::-moz-range-thumb {
   background: #bda8da;
   border-radius: 50%;
 }
-.silence-note {
-  position: absolute;
-  top: 50%;
-  width: 100%;
-  text-align: center;
-  color: #7e7389;
-  font-size: 11px;
-  letter-spacing: 0.2px;
-}
 .scene-fallback {
   position: absolute;
   inset: 25%;
@@ -948,7 +946,7 @@ input[type='range']::-moz-range-thumb {
   position: fixed;
   bottom: 103px;
   left: 50%;
-  transform: translateX(-50%);
+  translate: -50% 0;
   max-width: 650px;
   width: calc(100% - 40px);
   background: #251d30;
@@ -1055,11 +1053,24 @@ input[type='range']::-moz-range-thumb {
   padding: 30px;
   width: min(790px, calc(100% - 32px));
   max-height: 90dvh;
-  box-shadow: 0 30px 100px #000a;
+  box-shadow:
+    0 30px 100px #000a,
+    inset 0 1px 0 #ffffff08;
 }
 .profile-dialog::backdrop {
   background: #000a;
   backdrop-filter: blur(7px);
+  opacity: 1;
+  transition: opacity 0.24s ease;
+  @starting-style {
+    opacity: 0;
+  }
+}
+.profile-dialog[data-closing='true']::backdrop {
+  opacity: 0;
+}
+.profile-dialog[data-closing='true'] {
+  pointer-events: none;
 }
 .dialog-heading {
   display: flex;
@@ -1297,12 +1308,13 @@ input[type='range']::-moz-range-thumb {
     grid-template-columns: 244px minmax(260px, 1fr) 238px;
   }
   .workspace.without-inspector {
-    grid-template-columns: 244px 1fr;
+    grid-template-columns: 244px minmax(260px, 1fr) 0px;
   }
   .sidebar {
     padding: 30px 20px 20px;
   }
   .inspector {
+    width: 238px;
     padding: 30px 19px 20px;
   }
   .privacy {
@@ -1341,9 +1353,6 @@ input[type='range']::-moz-range-thumb {
   }
   .workspace.without-inspector {
     grid-template-columns: 225px 1fr;
-  }
-  .inspector {
-    display: none;
   }
   .privacy {
     display: none;
@@ -1440,6 +1449,7 @@ input[type='range']::-moz-range-thumb {
     display: none;
   }
   .perception-heading,
+  .perception-spotlight,
   .perception-card,
   .legend,
   .sidebar-footer {
@@ -1456,7 +1466,7 @@ input[type='range']::-moz-range-thumb {
     font-size: 34px;
   }
   .void-intro {
-    transform: translate(-50%, -50%);
+    translate: -50% -50%;
   }
   .void-symbol {
     margin-bottom: 23px;
@@ -1537,12 +1547,6 @@ input[type='range']::-moz-range-thumb {
     right: 25px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-    scroll-behavior: auto !important;
-  }
-}
 /* Keep transport in view while allowing dense control panels to scroll. */
 @media (min-width: 681px) {
   .app {
@@ -1610,7 +1614,7 @@ input[type='range']::-moz-range-thumb {
   }
 }
 @media (max-width: 980px) {
-  .workspace:not(.without-inspector) .inspector {
+  .workspace .inspector {
     display: flex;
     position: fixed;
     right: 0;
@@ -1623,7 +1627,7 @@ input[type='range']::-moz-range-thumb {
   }
 }
 @media (max-width: 680px) {
-  .workspace:not(.without-inspector) .inspector {
+  .workspace .inspector {
     top: 65px;
     bottom: 0;
   }
@@ -1651,4 +1655,53 @@ input[type='range']::-moz-range-thumb {
 .inspector-bottom,
 .event-list {
   flex-shrink: 0;
+}
+
+/* Restrained React Bits accents live in the interface, never in the black world. */
+.source-selection {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(115deg, #25212e, #17151d);
+  border: 1px solid #4b405e;
+  box-shadow: inset 0 1px 0 #e5d8ff08;
+  pointer-events: none;
+}
+.source-option:hover .source-icon {
+  color: #dbd1f8;
+}
+.perception-card {
+  background: linear-gradient(135deg, #17151d, #101014);
+}
+.perception-card:hover {
+  box-shadow: inset 0 1px 0 #d8caff10;
+}
+.perception-card > svg {
+  transition: transform 0.3s ease;
+}
+.perception-card:hover > svg {
+  transform: translateX(3px);
+}
+.primary:hover,
+.secondary:hover {
+  transform: translateY(-1px);
+}
+.primary:active,
+.secondary:active {
+  transform: translateY(0);
+}
+.level-meter > i {
+  transition: width 0.12s linear;
+}
+.app[data-reduced-motion='true'] *,
+.app[data-reduced-motion='true'] *::before,
+.app[data-reduced-motion='true'] *::backdrop {
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.app[data-reduced-motion='true'] .primary:hover,
+.app[data-reduced-motion='true'] .secondary:hover,
+.app[data-reduced-motion='true'] .perception-card:hover > svg {
+  transform: none;
 }

@@ -41,18 +41,19 @@ Dependencies point inward to `core`. `core` has no browser or graphics imports. 
 
 ## Exact toolchain
 
-| Layer          | Choice                                                     | Why                                                                  |
-| -------------- | ---------------------------------------------------------- | -------------------------------------------------------------------- |
-| UI             | React / React DOM 19.3.0                                   | Accessible declarative controls                                      |
-| Language       | TypeScript 5.9.3, strict + unchecked-index checks          | Supported by the chosen lint stack; no forced peer-dependency bypass |
-| Rendering      | React Three Fiber 9.8.1; Three.js 0.186.1                  | React 19-compatible stable R3F line; familiar WebGL deployment       |
-| Audio          | Browser Web Audio API                                      | Local, direct signal access and playback; no heavyweight DSP runtime |
-| Build          | Vite 8.3.2; React plugin 6.1.1                             | Fast dev loop, static output                                         |
-| Unit tests     | Vitest 5.0.3                                               | Fast tests for pure contracts and lifecycle doubles                  |
-| Browser tests  | Playwright 1.63.0                                          | Real Web Audio, transport, profile and responsive tests              |
-| Lint / format  | ESLint 10.12.0, typescript-eslint 8.71.0, Prettier 3.9.9   | Shared workspace checks                                              |
-| Typography     | Locally served Fontsource variable DM Sans / Manrope 5.3.0 | No external font-service requests                                    |
-| Workspace / CI | npm workspaces and lockfile; GitHub Actions on Node 24     | Small, reproducible toolchain                                        |
+| Layer          | Choice                                                      | Why                                                                  |
+| -------------- | ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| UI             | React / React DOM 19.3.0                                    | Accessible declarative controls                                      |
+| UI animation   | Motion 14.0.0; pinned React Bits Blur Text / Spotlight Card | Interruptible transitions, restrained reveals and hover lighting     |
+| Language       | TypeScript 5.9.3, strict + unchecked-index checks           | Supported by the chosen lint stack; no forced peer-dependency bypass |
+| Rendering      | React Three Fiber 9.8.1; Three.js 0.186.1                   | React 19-compatible stable R3F line; familiar WebGL deployment       |
+| Audio          | Browser Web Audio API                                       | Local, direct signal access and playback; no heavyweight DSP runtime |
+| Build          | Vite 8.3.2; React plugin 6.1.1                              | Fast dev loop, static output                                         |
+| Unit tests     | Vitest 5.0.3                                                | Fast tests for pure contracts and lifecycle doubles                  |
+| Browser tests  | Playwright 1.63.0                                           | Real Web Audio, transport, profile and responsive tests              |
+| Lint / format  | ESLint 10.12.0, typescript-eslint 8.71.0, Prettier 3.9.9    | Shared workspace checks                                              |
+| Typography     | Locally served Fontsource variable DM Sans / Manrope 5.3.0  | No external font-service requests                                    |
+| Workspace / CI | npm workspaces and lockfile; GitHub Actions on Node 24      | Small, reproducible toolchain                                        |
 
 React/R3F compatibility is documented in [R3F installation](https://r3f.docs.pmnd.rs/getting-started/installation). Runtime package declarations and `package-lock.json` are authoritative for installed versions.
 
@@ -83,6 +84,10 @@ An event includes the form, palette color, lightness, position, scale, motion/gl
 A fixed perspective camera looks into black. Fifteen reusable event slots share geometries for spheres, capsules, curved tubes and transparent sheets. Bass uses lit rubber-like materials; wisps/flames use procedural shaders; glow is local additive geometry. Lights illuminate forms only and do not illuminate the black background. No global bloom, environment image, ambient particles or feedback buffer remains visible in silence.
 
 Horizontal placement is compressed into the current camera width on narrow viewports while preserving direction. Depth is real perspective depth. Geometry visibility is immediate, avoiding release tails. Reduced motion stops procedural time displacement and wobble but retains necessary sound-driven appearance/disappearance.
+
+While an event remains audible, a presentation-only `SoundTransition` damps position, size, lightness, glow, and linear-space color with a 45 ms time constant; form weights crossfade with a 55 ms time constant. Exponential damping depends on elapsed time rather than frame count. New sounds appear at their measured positions on their first frame. Missing events hide immediately and clear transition history; no release animation runs across silence. The pure mapping output and inspector remain unfiltered. This reduces frame-to-frame jitter at the cost of a small intentional settling delay for changes within an active sound.
+
+Motion handles interface entrances/exits, source selection and navigation; CSS interpolates inspector column width. Native modal focus trapping is retained through the profile exit animation, then focus returns to its opener. New profiles inherit the operating system's reduced-motion setting; the profile checkbox provides a persistent explicit override. Reduced motion also bypasses scene interpolation. Vendored React Bits components and their separate license are recorded in [third-party notices](../THIRD_PARTY_NOTICES.md).
 
 Frame data lives in a ref; meshes update in `useFrame`. React UI telemetry updates at 10 Hz. The inspector's UI FPS is a request-animation-frame rate, not GPU frame timing or a hardware certification. R3F recommends avoiding state updates inside the render loop: [performance pitfalls](https://r3f.docs.pmnd.rs/advanced/pitfalls).
 
